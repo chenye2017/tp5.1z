@@ -18,4 +18,9 @@ class Behavior
         return false;
         var_dump($params, 11);
     }
+
+    public function test()
+    {
+        var_dump('wo yeshi yilai');
+    }
 }

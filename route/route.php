@@ -27,8 +27,19 @@ var_dump(11);exit;
 });
 
 
+Route::get('/yilai', function (\app\index\controller\Behavior $obj) {
+    $obj->test();
+});
 
-Route::get('/testhook', 'index/testhook');
+\think\facade\Route::get('/:name/:id', function ($id, $name) {
+   var_dump("id is $id, name is $name");
+});
+
+
+
+Route::get('/testhook', '\app\index\controller\Index@testhook');
+
+Route::get('/test', '/');
 
 return [
 
