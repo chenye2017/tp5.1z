@@ -27,7 +27,7 @@ class Log implements LoggerInterface
      * 日志信息
      * @var array
      */
-    protected $log = [];
+    protected $log = []; // 保存 error -> xxx, info -> xxx
 
     /**
      * 配置参数
@@ -40,6 +40,7 @@ class Log implements LoggerInterface
      * @var object
      */
     protected $driver;
+
 
     /**
      * 日志授权key
@@ -59,14 +60,24 @@ class Log implements LoggerInterface
      */
     protected $app;
 
+    public function getDriver()
+    {
+        var_dump($this->driver);
+    }
+
     public function __construct(App $app)
     {
+
         $this->app = $app;
     }
 
+    // 因为这个地方有__make ,所以实例化的时候会执行这个，而不是上面的__construct
+    // 这个方法又会调用__construct, 所以还是会执行上面那个
+    // config 可以数组方式访问
     public static function __make(App $app, Config $config)
     {
-        return (new static($app))->init($config->pull('log'));
+
+        return (new static($app))->init($config->pull('log')); // 把driver 改成file 的方式而不是scoket
     }
 
     /**
@@ -77,7 +88,7 @@ class Log implements LoggerInterface
      */
     public function init($config = [])
     {
-        $type = isset($config['type']) ? $config['type'] : 'File';
+        $type = isset($config['type']) ? $config['type'] : 'File'; // 默认是file 方式
 
         $this->config = $config;
 
@@ -100,11 +111,12 @@ class Log implements LoggerInterface
      */
     public function getLog($type = '')
     {
+        // 就是获取log 类中 log 属性的内容
         return $type ? $this->log[$type] : $this->log;
     }
 
     /**
-     * 记录日志信息
+     * 记录日志信息,到内存中
      * @access public
      * @param  mixed  $msg       日志信息
      * @param  string $type      日志级别
@@ -113,6 +125,7 @@ class Log implements LoggerInterface
      */
     public function record($msg, $type = 'info', array $context = [])
     {
+        // 解析msg
         if (!$this->allowWrite) {
             return;
         }
@@ -127,9 +140,11 @@ class Log implements LoggerInterface
         }
 
         if (PHP_SAPI == 'cli') {
+
             // 命令行日志实时写入
             $this->write($msg, $type, true);
         } else {
+
             $this->log[$type][] = $msg;
         }
 
@@ -169,6 +184,8 @@ class Log implements LoggerInterface
      */
     public function check($config)
     {
+        // 这种统一检测，就不需要放在driver 中验证了
+        // 属性key 和 config的配置项中 allow_key 都能通过验证
         if ($this->key && !empty($config['allow_key']) && !in_array($this->key, $config['allow_key'])) {
             return false;
         }
@@ -183,7 +200,7 @@ class Log implements LoggerInterface
      */
     public function close()
     {
-        $this->allowWrite = false;
+        $this->allowWrite = false; // 关闭日志的写入
         $this->log        = [];
 
         return $this;
@@ -238,19 +255,22 @@ class Log implements LoggerInterface
      */
     public function write($msg, $type = 'info', $force = false)
     {
+        // 这个地方也没有实际写日志，就是简单的处理下
+
         // 封装日志信息
         if (empty($this->config['level'])) {
             $force = true;
         }
 
         if (true === $force || in_array($type, $this->config['level'])) {
+
             $log[$type][] = $msg;
         } else {
             return false;
         }
 
         // 监听log_write
-        $this->app['hook']->listen('log_write', $log);
+        $this->app['hook']->listen('log_write', $log); // 写日志之前触发的事件
 
         // 写入日志
         return $this->driver->save($log, false);
@@ -266,6 +286,7 @@ class Log implements LoggerInterface
      */
     public function log($level, $message, array $context = [])
     {
+
         $this->record($message, $level, $context);
     }
 

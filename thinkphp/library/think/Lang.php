@@ -62,7 +62,7 @@ class Lang
         $this->app = $app;
     }
 
-    // 设定当前的语言
+    // 设定当前的语言, 传值就是设定当前语言，不传值就是获取当前语言
     public function range($range = '')
     {
         if ('' == $range) {
@@ -98,13 +98,14 @@ class Lang
     /**
      * 加载语言定义(不区分大小写)
      * @access public
-     * @param  string|array  $file   语言文件
+     * @param  string|array  $file   语言文件, 可以实数组
      * @param  string        $range  语言作用域
      * @return array
      */
     public function load($file, $range = '')
     {
-        $range = $range ?: $this->range;
+
+        $range = $range ?: $this->range; // zh-cn
         if (!isset($this->lang[$range])) {
             $this->lang[$range] = [];
         }
@@ -121,11 +122,13 @@ class Lang
                 // 记录加载信息
                 $this->app->log('[ LANG ] ' . $_file);
                 $_lang = include $_file;
+
                 if (is_array($_lang)) {
-                    $lang = array_change_key_case($_lang) + $lang;
+                    $lang = array_change_key_case($_lang) + $lang; // 先加载的错误提示总是会覆盖后加载的
                 }
             }
         }
+
 
         if (!empty($lang)) {
             $this->lang[$range] = $lang + $this->lang[$range];

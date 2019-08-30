@@ -14,6 +14,7 @@ class Index
 
     public function hello($name = 'ThinkPHP5')
     {
+        var_dump(111);
         return 'hello,' . $name;
     }
 
@@ -32,8 +33,12 @@ class Index
 
     }
 
-    public function test_1()
+    /**
+     * 注解路由
+     * @route('cy3')
+     */
+    public function test3()
     {
-
+        var_dump('e');
     }
 }

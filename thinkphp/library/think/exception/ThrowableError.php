@@ -11,14 +11,14 @@
 
 namespace think\exception;
 
-class ThrowableError extends \ErrorException
+class ThrowableError extends \ErrorException  // 感觉就是把error 转换成exception (throwable error)
 {
     public function __construct(\Throwable $e)
     {
 
         if ($e instanceof \ParseError) {
             $message  = 'Parse error: ' . $e->getMessage();
-            $severity = E_PARSE;
+            $severity = E_PARSE;  // 异常级别， 只有errorException 有这个属性， error 都没有这个属性
         } elseif ($e instanceof \TypeError) {
             $message  = 'Type error: ' . $e->getMessage();
             $severity = E_RECOVERABLE_ERROR;
@@ -28,14 +28,14 @@ class ThrowableError extends \ErrorException
         }
 
         parent::__construct(
-            $message,
+            $message, // 重新修改 官方的error Exception
             $e->getCode(),
-            $severity,
+            $severity, //
             $e->getFile(),
             $e->getLine()
-        );
+        ); // 给errorException 属性
 
-        $this->setTrace($e->getTrace());
+        $this->setTrace($e->getTrace()); // 这个应该就是错误栈
     }
 
     protected function setTrace($trace)

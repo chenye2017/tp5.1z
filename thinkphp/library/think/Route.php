@@ -160,6 +160,7 @@ class Route
     public function setConfig(array $config = [])
     {
         $this->config = array_merge($this->config, array_change_key_case($config));
+
     }
 
     public static function __make(App $app, Config $config)

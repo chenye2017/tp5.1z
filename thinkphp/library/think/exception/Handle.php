@@ -20,7 +20,7 @@ class Handle
 {
     protected $render;
     protected $ignoreReport = [
-        '\\think\\exception\\HttpException',
+        '\\think\\exception\\HttpException', // 可能是这种exception 不需要记录
     ];
 
     public function setRender($render)
@@ -38,8 +38,10 @@ class Handle
     public function report(Exception $exception)
     {
         if (!$this->isIgnoreReport($exception)) {
+
             // 收集异常数据
             if (Container::get('app')->isDebug()) {
+
                 $data = [
                     'file'    => $exception->getFile(),
                     'line'    => $exception->getLine(),
@@ -47,6 +49,7 @@ class Handle
                     'code'    => $this->getCode($exception),
                 ];
                 $log = "[{$data['code']}]{$data['message']}[{$data['file']}:{$data['line']}]";
+
             } else {
                 $data = [
                     'code'    => $this->getCode($exception),
@@ -55,16 +58,20 @@ class Handle
                 $log = "[{$data['code']}]{$data['message']}";
             }
 
-            if (Container::get('app')->config('log.record_trace')) {
+            if (Container::get('app')->config('log.record_trace')) { // 这个对应config 文件夹下log 文件中内容
                 $log .= "\r\n" . $exception->getTraceAsString();
             }
 
-            Container::get('log')->record($log, 'error');
+
+            $z =  Container::get('log');
+
+           $z->record($log, 'error'); // 返回一个Log php, log 属性中保存日志信息
         }
     }
 
     protected function isIgnoreReport(Exception $exception)
     {
+        // 判断这个exception是否来自 ignore 的 exception
         foreach ($this->ignoreReport as $class) {
             if ($exception instanceof $class) {
                 return true;
@@ -86,12 +93,13 @@ class Handle
         if ($this->render && $this->render instanceof \Closure) {
             $result = call_user_func_array($this->render, [$e]);
 
-            if ($result) {
+            if ($result) { // 没有返回值，直接var_dump() 的话这个停止不了，还会继续往下走
                 return $result;
             }
         }
 
         if ($e instanceof HttpException) {
+            //var_dump(111);exit;
             return $this->renderHttpException($e);
         } else {
             return $this->convertExceptionToResponse($e);
@@ -181,6 +189,10 @@ class Handle
 
         ob_start();
         extract($data);
+
+        Container::get('app')->setConfig('exception_tmpl',  realpath(dirname(dirname($_SERVER['SCRIPT_FILENAME']))).'\\'.'thinkphp\\tpl\\think_exception.tpl');
+
+       // var_dump(Container::get('app')->config('exception_tmpl'));exit;
         include Container::get('app')->config('exception_tmpl');
 
         // 获取并清空缓存

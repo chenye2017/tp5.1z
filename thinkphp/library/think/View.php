@@ -115,6 +115,7 @@ class View
             $type    = $options;
             $options = [];
         } else {
+
             $type = !empty($options['type']) ? $options['type'] : 'Think';
         }
 

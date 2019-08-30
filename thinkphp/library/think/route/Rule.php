@@ -451,6 +451,7 @@ abstract class Rule
      */
     public function header($header, $value = null)
     {
+        // Route 的 get  post 最终会转换成 rule , rule 返回的 RuleItem 类，继承于 Rule类，最终调用的 rule类和 ruleitem 类中的方法
         if (is_array($header)) {
             $this->option['header'] = $header;
         } else {

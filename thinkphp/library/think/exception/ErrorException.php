@@ -17,7 +17,7 @@ use think\Exception;
  * ThinkPHP错误异常
  * 主要用于封装 set_error_handler 和 register_shutdown_function 得到的错误
  * 除开从 think\Exception 继承的功能
- * 其他和PHP系统\ErrorException功能基本一样
+ * 其他和PHP系统\ErrorException功能基本一样，setData的功能
  */
 class ErrorException extends Exception
 {

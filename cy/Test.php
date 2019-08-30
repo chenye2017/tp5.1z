@@ -27,8 +27,113 @@ $nowDir = realpath(__DIR__);
 \think\Loader::addClassAlias([
     'Config'      => \think\facade\Config::class,
     'Env' => \think\facade\Env::class
-
 ]);
+
+$data = [
+   // 'name'  => 'thinkphp',
+  //  'email' => 'thinkphp@qq.com',
+];
+
+\think\Error::register();
+
+require_once "./think.php"; // log interface
+
+require_once './error.php';
+
+
+
+//trigger_error('warning', E_USER_NOTICE);
+
+exit;
+
+\think\Container::get('app');exit;
+
+\think\Container::get('log')->log(100,'222');exit;
+
+use think\Validate;
+
+class User extends Validate
+{
+    protected $rule =   [
+        'name'  => 'require|max:25',
+        'age'   => 'require|number|between:1,120',
+        'email' => 'email',
+    ];
+
+    protected $message  =   [
+        'name.require' => '名称必须',
+        'name.max'     => '名称最多不能超过25个字符',
+        'age.number'   => '年龄必须是数字',
+        'age.between'  => '年龄只能在1-120之间',
+        'email'        => '邮箱格式错误',
+    ];
+
+}
+$validate = new User();
+
+if (!$validate->batch(true)->check($data)) {
+    try {
+        throw new \think\exception\ValidateException($validate->getError());
+    } catch (\Exception $e) {
+        var_dump($e->getMessage());
+    }
+}
+exit;
+
+
+$dbms='mysql';     //数据库类型
+$host='127.0.0.1'; //数据库主机名
+$dbName='zerg';    //使用的数据库
+$user='root';      //数据库连接用户名
+$pass='';          //对应的密码
+$dsn="$dbms:host=$host;dbname=$dbName";
+
+
+try {
+    $con = new \PDO($dsn, $user, $pass);
+    $con->prepare('bogus sql');
+    var_dump($con->errorInfo());
+} catch (\PDOException $e) {
+    var_dump($e->errorInfo, 11);
+    exit;
+}
+
+exit;
+
+try {
+    throw new \Exception('test', 0, new \Exception('test1'));
+} catch (\Exception $e) {
+    $tmp = $e->getPrevious();
+    var_dump($tmp->getMessage());
+}
+
+exit;
+
+
+class test extends RuntimeException
+{
+
+}
+$var =1;
+try {
+    1/0;
+    require 'some-file-with-syntax-error.php';
+    assert(2 < 1, 'Two is less than one');
+    var_dump(1/0);
+   // throw  new Exception('test');
+    $var->method();
+} catch (\Exception $e) {
+    var_dump($e->getMessage());
+    exit;
+} catch (\Throwable $e) {
+    var_dump($e->getMessage());
+    exit;
+} catch (\Error $e) {
+    var_dump($e->getMessage());
+    exit;
+}
+
+exit;
 
 $c = new \think\Config();
 $c->load(realpath('./test.ini'));

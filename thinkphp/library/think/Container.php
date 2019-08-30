@@ -47,19 +47,19 @@ use think\exception\ClassNotFoundException;
  */
 class Container implements ArrayAccess, IteratorAggregate, Countable
 {
-    public $cname = 'cy222';
+
 
     /**
      * 容器对象实例
      * @var Container
      */
-    protected static $instance; // 自身的单例
+    public static $instance; // 自身的单例
 
     /**
      * 容器中的对象实例
      * @var array
      */
-    protected $instances = []; // 用来装各个类的实例
+    public $instances = []; // 用来装各个类的实例
 
     /**
      * 容器绑定标识
@@ -106,7 +106,9 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
      */
     public static function getInstance()
     {
+
         if (is_null(static::$instance)) {
+
             static::$instance = new static;
         }
 
@@ -142,7 +144,12 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
      */
     public static function get($abstract, $vars = [], $newInstance = false)
     {
-        return static::getInstance()->make($abstract, $vars, $newInstance);
+       // var_dump(12);exit; 为什么这个地方会打印两次 12, 一次 app， 一次 log， 感觉有两个进程，但php-fpm 应该都是单进程的呀
+        $z = static::getInstance()->make($abstract, $vars, $newInstance);
+
+
+
+        return $z;
     }
 
     /**
@@ -217,11 +224,12 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
      */
     public function instance($abstract, $instance)
     {
+
         if ($instance instanceof \Closure) {
             $this->bind[$abstract] = $instance;
         } else {
             if (isset($this->bind[$abstract])) {
-                $abstract = $this->bind[$abstract];
+                $abstract = $this->bind[$abstract]; // 把别名转换成类名
             }
 
             $this->instances[$abstract] = $instance; // instances 属性中key 是具体的类名
@@ -296,11 +304,13 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
             if ($concrete instanceof Closure) {
                 $object = $this->invokeFunction($concrete, $vars);
             } else {
+
                 // bind 中都是类（回调函数也是一种类closure,） 可能不全，直接绑定到instance 上
                 $this->name[$abstract] = $concrete; // name 和 bind 区别是啥，name 不能装匿名函数吗
                 // bind 和 name 中就是装别名的嘛
                 // 感觉这个make 可以处理类名。但是对于回调函数不太好处理，需要用到bindto
                 // 把别名换成实际的类再执行
+
                 return $this->make($concrete, $vars, $newInstance);
             }
         } else { // 不在预定义的类实例当中
@@ -446,6 +456,7 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
      */
     public function invokeClass($class, $vars = []) // 实际生成实例
     {
+
         try {
             $reflect = new ReflectionClass($class); // 获取一个类的反射实例
 
@@ -463,7 +474,11 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
 
             $args = $constructor ? $this->bindParams($constructor, $vars) : []; // 获取构造函数要的参数
 
-            return $reflect->newInstanceArgs($args); // 参数是数组， newInstance, 参数不一定
+            $a = $reflect->newInstanceArgs($args);
+
+
+
+            return $a; // 参数是数组， newInstance, 参数不一定
         } catch (ReflectionException $e) {
             throw new ClassNotFoundException('class not exists: ' . $class, $class);
         }
@@ -589,7 +604,7 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
     {
         // var_dump 一个实例对象的时候会执行
         $data = get_object_vars($this); // 返回由对象属性组成的关联数组
-        unset($data['instances'], $data['instance']); // 删除容器中的所有实例，删除容器自身单例对象，不太明白为啥要删除这两个
+      //  unset($data['instances'], $data['instance']); // 删除容器中的所有实例，删除容器自身单例对象，不太明白为啥要删除这两个
 
         return $data;
     }

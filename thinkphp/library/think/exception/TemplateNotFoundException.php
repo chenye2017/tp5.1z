@@ -13,7 +13,7 @@ namespace think\exception;
 
 class TemplateNotFoundException extends \RuntimeException
 {
-    protected $template;
+    protected $template; // 模板文件名称
 
     public function __construct($message, $template = '')
     {

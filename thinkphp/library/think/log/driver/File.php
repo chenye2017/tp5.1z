@@ -55,7 +55,8 @@ class File
      */
     public function save(array $log = [], $append = false)
     {
-        $destination = $this->getMasterLogFile();
+        // $this->config['json'] = true; 写入json 类型
+        $destination = $this->getMasterLogFile(); // 获取日志文件路径
 
         $path = dirname($destination);
         !is_dir($path) && mkdir($path, 0755, true);
@@ -66,14 +67,16 @@ class File
 
             foreach ($val as $msg) {
                 if (!is_string($msg)) {
-                    $msg = var_export($msg, true);
+                    $msg = var_export($msg, true); // 任何形式转成string
                 }
 
                 $info[$type][] = $this->config['json'] ? $msg : '[ ' . $type . ' ] ' . $msg;
             }
 
+           // $this->config['apart_level'] = [100];
             if (!$this->config['json'] && (true === $this->config['apart_level'] || in_array($type, $this->config['apart_level']))) {
                 // 独立记录的日志级别
+                // 什么是独立日志，就是这个级别的日志单独记录
                 $filename = $this->getApartLevelFile($path, $type);
 
                 $this->write($info[$type], $filename, true, $append);
@@ -82,7 +85,7 @@ class File
             }
         }
 
-        if ($info) {
+        if ($info) { // 这个save 最后还是调用了write
             return $this->write($info, $destination, false, $append);
         }
 
@@ -106,6 +109,7 @@ class File
         // 日志信息封装
         $info['timestamp'] = date($this->config['time_format']);
 
+
         foreach ($message as $type => $msg) {
             $info[$type] = is_array($msg) ? implode("\r\n", $msg) : $msg;
         }
@@ -119,7 +123,7 @@ class File
             $message = $this->parseLog($info);
         }
 
-        return error_log($message, 3, $destination);
+        return error_log($message, 3, $destination); // 这个地方要是之前的destination不存在了，这个地方会重新新建一个新的
     }
 
     /**
@@ -129,31 +133,35 @@ class File
      */
     protected function getMasterLogFile()
     {
+
         if ($this->config['max_files']) {
-            $files = glob($this->config['path'] . '*.log');
+
+            $files = glob($this->config['path'] . '*.log'); // 这个目录下的所有log文件
 
             try {
-                if (count($files) > $this->config['max_files']) {
+                if (count($files) > $this->config['max_files']) { // 如果文件数量超过了，就删除
                     unlink($files[0]);
                 }
             } catch (\Exception $e) {
             }
         }
 
-        if ($this->config['single']) {
+        if ($this->config['single']) { // 单日志文件
             $name = is_string($this->config['single']) ? $this->config['single'] : 'single';
 
             $destination = $this->config['path'] . $name . '.log';
         } else {
+
             $cli = PHP_SAPI == 'cli' ? '_cli' : '';
 
             if ($this->config['max_files']) {
                 $filename = date('Ymd') . $cli . '.log';
             } else {
                 $filename = date('Ym') . DIRECTORY_SEPARATOR . date('d') . $cli . '.log';
+
             }
 
-            $destination = $this->config['path'] . $filename;
+            $destination = $this->config['path'] . $filename; // 相对路径
         }
 
         return $destination;
@@ -185,18 +193,21 @@ class File
 
     /**
      * 检查日志文件大小并自动生成备份文件
+     * 这个方法中rename 只是修改源文件的名称
      * @access protected
      * @param  string    $destination 日志文件
      * @return void
      */
     protected function checkLogSize($destination)
     {
+       // $this->config['file_size'] = 40;
         if (is_file($destination) && floor($this->config['file_size']) <= filesize($destination)) {
             try {
                 rename($destination, dirname($destination) . DIRECTORY_SEPARATOR . time() . '-' . basename($destination));
             } catch (\Exception $e) {
             }
         }
+       // exit;
     }
 
     /**

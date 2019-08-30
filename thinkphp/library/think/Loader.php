@@ -66,10 +66,12 @@ class Loader
 
             $scriptName = realpath($_SERVER['argv'][0]);
         } else {
-            $scriptName = $_SERVER['SCRIPT_FILENAME'];
+            $scriptName = $_SERVER['SCRIPT_FILENAME']; // web 模式下获取根目录
         }
 
-        $path = realpath(dirname($scriptName));
+        $path = realpath(dirname($scriptName)); // 因为一般是public 下面，所以需要上一层
+
+
 
         if (!is_file($path . DIRECTORY_SEPARATOR . 'think')) {
             $path = dirname($path);
@@ -372,7 +374,7 @@ class Loader
     {
         foreach (self::$files as $fileIdentifier => $file) {
             if (empty($GLOBALS['__composer_autoload_files'][$fileIdentifier])) {
-                __require_file($file);
+                __require_file($file); // 不知道为啥要这么封装require
 
                 $GLOBALS['__composer_autoload_files'][$fileIdentifier] = true;
             }

@@ -302,7 +302,7 @@ class Validate
     }
 
     /**
-     * 设置批量验证
+     * 设置批量验证,一个错误不会停止验证
      * @access public
      * @param  bool $batch  是否批量验证
      * @return $this

@@ -64,8 +64,8 @@ class Middleware
         if (is_null($middleware)) {
             return;
         }
-
-        $middleware = $this->buildMiddleware($middleware, $type); // 返回数组，[  [类, 方法 handle], 参数           ]
+        // 默认是路由中间件
+        $middleware = $this->buildMiddleware($middleware, $type); // 返回数组，[[类, 方法 handle], 参数 ]
 
         if ($middleware) {
 

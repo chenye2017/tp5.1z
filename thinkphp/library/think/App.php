@@ -68,7 +68,7 @@ class App extends Container
      * 应用类库目录
      * @var string
      */
-    protected $appPath;
+    protected $appPath; // application 文件夹位置
 
     /**
      * 框架目录
@@ -80,7 +80,7 @@ class App extends Container
      * 应用根目录
      * @var string
      */
-    protected $rootPath;
+    protected $rootPath; // 项目目录
 
     /**
      * 运行时目录
@@ -126,10 +126,10 @@ class App extends Container
 
     public function __construct($appPath = '')
     {
-        $this->thinkPath = dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR;
+        $this->thinkPath = dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR; // 设置thinkpath
 
-        $this->path($appPath); // 设置thinkpath 和app_path
-
+        $this->path($appPath); // app_path
+       // var_dump(App::$instance);exit;
     }
 
     /**
@@ -177,7 +177,12 @@ class App extends Container
         $this->beginTime   = microtime(true);
         $this->beginMem    = memory_get_usage();
 
-        $this->rootPath    = dirname($this->appPath) . DIRECTORY_SEPARATOR; // 定义 root path
+
+
+            $this->rootPath = dirname($this->appPath) . DIRECTORY_SEPARATOR; // 定义 root path
+
+
+
         $this->runtimePath = $this->rootPath . 'runtime' . DIRECTORY_SEPARATOR; // 定义 runtime path
         $this->routePath   = $this->rootPath . 'route' . DIRECTORY_SEPARATOR;  // 定义route path
         $this->configPath  = $this->rootPath . 'config' . DIRECTORY_SEPARATOR;
@@ -188,28 +193,35 @@ class App extends Container
         //var_dump($app->showInstance(), 222);exit;
         //var_dump(static::$instance);
 
-        static::setInstance($this); // app 自己的instace 属性，app 也是单例模式 ,把 container 的单例从 container 改成了 app ,这个static 是 container class .container 的实例改成 自己的子类 app. $this 是 app的实例
+
+        //var_dump(App::$instance);
+
+        static::setInstance($this); // 这个地方static 是 app， 可以打印 new static, 前面 Container::get('app'), 这个地方就是 app 类了， app 继承于 container， 所以 static instance 属性也是唯一的，这个地方把 app 的 instance 属性修改成自己的
+
 
 
        // var_dump(static::$instance);exit;
 //var_dump(Container::showInstance());exit;
   //      var_dump(Container::get('app')->showInstances());
-        $this->instance('app', $this); //把 app 的实例instances 添加 app 进去 (app 本身也是一个容器)
+        $this->instance('app', $this); //把 app 的实例加入到 instances 属性数组中 (app 本身也是一个容器， app 继承于 container)
 //var_dump(Container::get('app')->showInstances());exit;
         //var_dump()
 
         // 上面两行代码的作用就是把 container 的实例从 container 换成 app, 然后修改 app 这个实例的内容，比如绑定自身到 instances 属性中。 app 可以看做 container 的扩展，因为新的instance 实例 没哟 app 对象，所以重新把app对象塞了进去
 
+        // 利用的是魔术方法， __get,
         // env 是container 中的 container ->imagees->env , 也就是 Env的实例 （）
+        // app 容器中，实例化 env
         $this->configExt = $this->env->get('config_ext', '.php'); // 先在自己的data属性中查找，找不到再去getenv() 查找
 
         //  $this->configExt = 'yaml';
 
 
         // 加载惯例配置文件
+        // app 容器中 实例化config， instances 属性中添加这个实例
         $this->config->set(include $this->thinkPath . 'convention.php');
 
-        // 设置路径环境变量 ,调用container 的魔术方法 __get
+        // 设置路径环境变量 ,这都是系统计算的属性值，往 env实例 中写入
         $this->env->set([
             'think_path'   => $this->thinkPath,   // 定义thinkphp 核心代码库 src
             'root_path'    => $this->rootPath, // 定义 root path (并不是 public path)
@@ -231,6 +243,7 @@ class App extends Container
 
         $this->namespace = $this->env->get('app_namespace', $this->namespace); // 这个地方namespace 也是可以修改的
         // psr4 只规定了某个文件夹里面的文件需要按照文件夹包含的规则，并没有规定某个初始文件夹的名称一定要和命名空间一样，比如这块文件夹名称就是 application， 命名空间是 app
+        // composer.json 中已经有了 app -》 application 这个命名空间，如果要修改这个app 的话，看来需要额外再添加命名空间，并不一定要修改composer.json, 也可以通过代码来修改composer 中的几个属性
         $this->env->set('app_namespace', $this->namespace);
 
 
@@ -242,8 +255,10 @@ class App extends Container
         // 初始化应用
         $this->init();
 
+
+
         // 开启类名后缀
-        $this->suffix = $this->config('app.class_suffix');
+        $this->suffix = $this->config('app.class_suffix'); // 以前像一些控制器都喜欢加Controller 后缀，model 加 Model 后缀
 
 
 
@@ -320,25 +335,26 @@ class App extends Container
         } else {
 
             // 加载行为扩展文件
-            // 钩子函数的实现
+            // 添加钩子函数
             if (is_file($path . 'tags.php')) {
                 $tags = include $path . 'tags.php';
+
                 if (is_array($tags)) {
-                    $this->hook->import($tags);
+                    $this->hook->import($tags); // 修改hook 中tags 属性
                 }
             }
 
-            // 加载公共文件
+            // 添加公共文件
             if (is_file($path . 'common.php')) {
                 include_once $path . 'common.php';
             }
 
             if ('' == $module) {
-                // 加载系统助手函数
+                // 添加系统助手函数
                 include $this->thinkPath . 'helper.php';
             }
 
-            // 加载中间件
+            // 添加中间件
             if (is_file($path . 'middleware.php')) {
                 $middleware = include $path . 'middleware.php';
                 if (is_array($middleware)) {
@@ -351,22 +367,23 @@ class App extends Container
             if (is_file($path . 'provider.php')) {
                 $provider = include $path . 'provider.php';
                 if (is_array($provider)) {
+                    // 添加bind 属性内容
                     $this->bindTo($provider); // 这个地方返回的肯定是数组，所以只会走merge
                 }
             }
 
-            // 自动读取配置文件
+            // 自动读取配置文件 （理解成执行吧）
             if (is_dir($path . 'config')) {
                 $dir = $path . 'config' . DIRECTORY_SEPARATOR;
             } elseif (is_dir($this->configPath . $module)) {
                 $dir = $this->configPath . $module;
-
             }
 
             $files = isset($dir) ? scandir($dir) : [];
 
             foreach ($files as $file) {
                 if ('.' . pathinfo($file, PATHINFO_EXTENSION) === $this->configExt) { // 默认加载php文件
+                    // 具体的执行步骤
                     $this->config->load($dir . $file, pathinfo($file, PATHINFO_FILENAME));
                 }
             }
@@ -388,15 +405,16 @@ class App extends Container
         $config = $this->config->get();//var_dump(111,$config);,加载module 的时候，用module的config覆盖全局的config
 
         // 注册异常处理类
+        // 加载用户自定义的异常处理
         if ($config['app']['exception_handle']) {
             Error::setExceptionHandler($config['app']['exception_handle']);
         }
 
         // 下面这些配置针对的都是不同模块不一样
         Db::init($config['database']);
-        $this->middleware->setConfig($config['middleware']);
-        $this->route->setConfig($config['app']);
-        $this->request->init($config['app']);
+        $this->middleware->setConfig($config['middleware']); // middleware 的配置
+        $this->route->setConfig($config['app']); // route 的配置 ,app 竟然是给route 的配置
+        $this->request->init($config['app']); // request 也用的 app 配置
         $this->cookie->init($config['cookie']);
         $this->view->init($config['template']);
         $this->log->init($config['log']);
@@ -404,7 +422,7 @@ class App extends Container
         $this->debug->setConfig($config['trace']);
         $this->cache->init($config['cache'], true);
 
-        // 加载当前模块语言包
+        // 加载当前模块语言包，对于错误提示进行修改
         $this->lang->load($this->appPath . $module . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . $this->request->langset() . '.php');
 
         // 模块请求缓存检查
@@ -428,7 +446,9 @@ class App extends Container
             $this->initialize();
 
             // 监听app_init
-            $this->hook->listen('app_init');
+            $this->hook->listen('app_init'); // hook 狗仔 app_init 绑定的执行
+
+
 
             if ($this->bindModule) {
                 // 模块/控制器绑定
@@ -442,9 +462,11 @@ class App extends Container
             }
 
             // 监听app_dispatch
-            $this->hook->listen('app_dispatch');
+            $this->hook->listen('app_dispatch'); // app dispatch 绑定执行
 
             $dispatch = $this->dispatch;
+
+
 
             if (empty($dispatch)) {
                 // 路由检测
@@ -462,7 +484,7 @@ class App extends Container
             }
 
             // 监听app_begin
-            $this->hook->listen('app_begin');
+            $this->hook->listen('app_begin'); // 钩子 app_begin 执行
 
             // 请求缓存检查
             $this->checkRequestCache(
@@ -484,7 +506,7 @@ class App extends Container
         $response = $this->middleware->dispatch($this->request);
 
         // 监听app_end
-        $this->hook->listen('app_end', $response);
+        $this->hook->listen('app_end', $response); // 钩子 app end 执行
 
         return $response;
     }
@@ -501,23 +523,28 @@ class App extends Container
         return $routeKey;
     }
 
+    // 切换不同类型的错误提示
     protected function loadLangPack()
     {
         // 读取默认语言
+
         $this->lang->range($this->config('app.default_lang'));
 
-        if ($this->config('app.lang_switch_on')) {
+        if ($this->config('app.lang_switch_on')) { // 默认是关闭多语言
             // 开启多语言机制 检测当前语言
             $this->lang->detect();
         }
 
-        $this->request->setLangset($this->lang->range());
+        $this->request->setLangset($this->lang->range()); // 设定request 中lang 是 zh-cn
+
 
         // 加载系统语言包
+        // 就是把错误提示修改成 zh-cn
         $this->lang->load([
             $this->thinkPath . 'lang' . DIRECTORY_SEPARATOR . $this->request->langset() . '.php',
             $this->appPath . 'lang' . DIRECTORY_SEPARATOR . $this->request->langset() . '.php',
         ]);
+
     }
 
     /**
@@ -586,7 +613,13 @@ class App extends Container
      */
     public function config($name = '')
     {
+        // 这个config 应该就是对应该config 文件夹下的内容
         return $this->config->get($name);
+    }
+
+    public function setConfig($key, $value)
+    {
+        $this->config->set($key, $value);
     }
 
     /**
@@ -636,6 +669,7 @@ class App extends Container
     public function routeCheck()
     {
         // 检测路由缓存
+
         if (!$this->appDebug && $this->config->get('route_check_cache')) {
             $routeKey = $this->getRouteCacheKey();
             $option   = $this->config->get('route_cache_option');
@@ -922,6 +956,7 @@ class App extends Container
      */
     public function getAppPath()
     {
+
         if (is_null($this->appPath)) {
             $this->appPath = Loader::getRootPath() . 'application' . DIRECTORY_SEPARATOR;
         }

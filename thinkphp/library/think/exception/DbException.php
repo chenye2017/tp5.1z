@@ -29,7 +29,7 @@ class DbException extends Exception
     public function __construct($message, array $config, $sql, $code = 10500)
     {
         $this->message = $message;
-        $this->code    = $code;
+        $this->code    = $code; // 应该是类似自定义的code
 
         $this->setData('Database Status', [
             'Error Code'    => $code,

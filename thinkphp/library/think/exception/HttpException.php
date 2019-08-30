@@ -11,9 +11,10 @@
 
 namespace think\exception;
 
+// parent::__construct(404, 'Route Not Found'); route not found exception
 class HttpException extends \RuntimeException
 {
-    private $statusCode;
+    private $statusCode; // 404 那些状态码
     private $headers;
 
     public function __construct($statusCode, $message = null, \Exception $previous = null, array $headers = [], $code = 0)

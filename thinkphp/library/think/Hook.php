@@ -88,7 +88,8 @@ class Hook
      */
     public function add($tag, $behavior, $first = false)
     {
-        isset($this->tags[$tag]) || $this->tags[$tag] = []; // 初始化
+
+        isset($this->tags[$tag]) || $this->tags[$tag] = []; // 初始化,这样写真的蛮难理解的
 
         //php7  $this->tags[$tag] = $this->tags[$tag] ?? [];
 
@@ -97,7 +98,7 @@ class Hook
             if (!array_key_exists('_overlay', $behavior)) { // 我们一般设置的behavior都是索引，没有到还可以设置关联
                 $this->tags[$tag] = array_merge($this->tags[$tag], $behavior);
             } else {
-                unset($behavior['_overlay']);
+                unset($behavior['_overlay']); // 结合使用场景更容易理解
                 $this->tags[$tag] = $behavior;
             }
         } elseif ($first) { // 添加在头部

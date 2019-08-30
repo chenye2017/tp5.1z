@@ -40,6 +40,7 @@ class Think
 
     public function __construct(App $app, $config = [])
     {
+
         $this->app    = $app;
         $this->config = array_merge($this->config, (array) $config);
 

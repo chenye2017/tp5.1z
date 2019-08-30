@@ -12,6 +12,7 @@
 // +----------------------------------------------------------------------
 // | 应用设置
 // +----------------------------------------------------------------------
+//error_reporting(E_ALL ^ E_NOTICE);
 
 return [
     // 应用名称
@@ -103,7 +104,7 @@ return [
     // 路由是否完全匹配
     'route_complete_match'   => false,
     // 使用注解路由
-    'route_annotation'       => false,
+    'route_annotation'       => true,
     // 域名根，如thinkphp.cn
     'url_domain_root'        => '',
     // 是否自动转换URL中的控制器和操作名
@@ -141,6 +142,6 @@ return [
     // 显示错误信息
     'show_error_msg'         => false,
     // 异常处理handle类 留空使用 \think\exception\Handle
-    'exception_handle'       => '',
+    'exception_handle'       => '\\app\\common\\exception\\Http',
 
 ];

@@ -37,7 +37,7 @@ class Env
      */
     public function load($file)
     {
-        $env = parse_ini_file($file, true);
+        $env = parse_ini_file($file, true); // .env 是 ini 文件
         $this->set($env);
     }
 
@@ -109,7 +109,7 @@ class Env
                         $this->data[$key . '_' . strtoupper($k)] = $v;
                     }
                 } else {
-                    $this->data[$key] = $val;
+                    $this->data[$key] = $val; // 感觉 .env 会覆盖之前的环境变量
                 }
             }
           //  var_dump($this->data);
