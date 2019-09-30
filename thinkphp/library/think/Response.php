@@ -79,17 +79,19 @@ class Response
      */
     public function __construct($data = '', $code = 200, array $header = [], $options = [])
     {
+
         $this->data($data);
 
         if (!empty($options)) {
             $this->options = array_merge($this->options, $options);
         }
 
-        $this->contentType($this->contentType, $this->charset);
+        $this->contentType($this->contentType, $this->charset); // 把content-type 和 charset 拼接
 
         $this->code   = $code;
         $this->app    = Container::get('app');
         $this->header = array_merge($this->header, $header);
+     //   var_dump($this->options, $this->code, $this->header);
     }
 
     /**
@@ -103,13 +105,14 @@ class Response
      * @return Response
      */
     public static function create($data = '', $type = '', $code = 200, array $header = [], $options = [])
-    {
+    {  // var_dump($data);
         $class = false !== strpos($type, '\\') ? $type : '\\think\\response\\' . ucfirst(strtolower($type));
+
 
         if (class_exists($class)) {
             return new $class($data, $code, $header, $options);
         }
-
+        // html 不存在，默认就实例化response 类
         return new static($data, $code, $header, $options);
     }
 
@@ -121,24 +124,29 @@ class Response
      */
     public function send()
     {
+
         // 监听response_send
         $this->app['hook']->listen('response_send', $this);
 
-        // 处理输出数据
+        // 处理输出数据， 对控制器返回的数据进行解析
         $data = $this->getContent();
 
+       // var_dump($data);exit;
+//var_dump($this->allowCache, $this->code);
         // Trace调试注入
         if ('cli' != PHP_SAPI && $this->app['env']->get('app_trace', $this->app->config('app.app_trace'))) {
-            $this->app['debug']->inject($this, $data);
+            $this->app['debug']->inject($this, $data); // 我基本没用trace
         }
 
         if (200 == $this->code && $this->allowCache) {
             $cache = $this->app['request']->getCache();
+//var_dump($cache);
             if ($cache) {
                 $this->header['Cache-Control'] = 'max-age=' . $cache[1] . ',must-revalidate';
-                $this->header['Last-Modified'] = gmdate('D, d M Y H:i:s') . ' GMT';
+                $this->header['Last-Modified'] = gmdate('D, d M Y H:i:s') . ' GMT'; // 国际时间
                 $this->header['Expires']       = gmdate('D, d M Y H:i:s', $_SERVER['REQUEST_TIME'] + $cache[1]) . ' GMT';
 
+             //   $cache[2] = 'route';
                 $this->app['cache']->tag($cache[2])->set($cache[0], [$data, $this->header], $cache[1]);
             }
         }
@@ -151,7 +159,8 @@ class Response
                 header($name . (!is_null($val) ? ':' . $val : ''));
             }
         }
-
+      //  header('Content-type:text/html');
+        //var_dump($data);exit;
         $this->sendData($data);
 
         if (function_exists('fastcgi_finish_request')) {
@@ -160,6 +169,7 @@ class Response
         }
 
         // 监听response_end
+        // 这个response end 不能修改返回给客户端的数据了，因为客户端的连接已经断开了
         $this->app['hook']->listen('response_end', $this);
 
         // 清空当次请求有效的数据
@@ -187,6 +197,7 @@ class Response
      */
     protected function sendData($data)
     {
+        //var_dump($data);
         echo $data;
     }
 
@@ -211,7 +222,8 @@ class Response
      */
     public function data($data)
     {
-        $this->data = $data;
+        $this->data = $data; // 设置 数据
+
 
         return $this;
     }
@@ -239,7 +251,7 @@ class Response
     public function header($name, $value = null)
     {
         if (is_array($name)) {
-            $this->header = array_merge($this->header, $name);
+            $this->header = array_merge($this->header, $name); // 设置响应头信息
         } else {
             $this->header[$name] = $value;
         }
@@ -276,7 +288,7 @@ class Response
      */
     public function code($code)
     {
-        $this->code = $code;
+        $this->code = $code; // http 状态码
 
         return $this;
     }
@@ -355,6 +367,7 @@ class Response
      */
     public function contentType($contentType, $charset = 'utf-8')
     {
+
         $this->header['Content-Type'] = $contentType . '; charset=' . $charset;
 
         return $this;
@@ -393,13 +406,14 @@ class Response
     public function getContent()
     {
         if (null == $this->content) {
-            $content = $this->output($this->data);
+            $content = $this->output($this->data); // 数据处理， 看来这个 data属性就是我们控制器中返回的内容， 这个output 是根据不同的定义类型比如 content-type 决定的
 
             if (null !== $content && !is_string($content) && !is_numeric($content) && !is_callable([
                 $content,
                 '__toString',
             ])
             ) {
+              //  var_dump('cuowula');
                 throw new \InvalidArgumentException(sprintf('variable type error： %s', gettype($content)));
             }
 

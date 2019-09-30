@@ -1,6 +1,6 @@
 <?php
 
 // 全局中间件
-return [
+/*return [
     [\app\http\middleware\Check::class, ['test', 'test33']]
-];
+];*/

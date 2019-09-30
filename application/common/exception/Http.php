@@ -16,6 +16,6 @@ class Http extends Handle
 {
     public function render(Exception $e)
     {
-        var_dump('222');exit;
+        //var_dump('222');exit;
     }
 }

@@ -144,14 +144,17 @@ abstract class Dispatch
 
     /**
      * 执行路由调度
+     * 很重要，路由匹配之后的逻辑处理
      * @access public
      * @return mixed
      */
     public function run()
     {
+        // 这个就是组装response， 正真的的输出response，是在response 的send 中具体实现的
         $option = $this->rule->getOption();
 
-        // 检测路由after行为
+
+        // 检测路由after行为 (路由相关)
         if (!empty($option['after'])) {
             $dispatch = $this->checkAfter($option['after']);
 
@@ -160,27 +163,39 @@ abstract class Dispatch
             }
         }
 
-        // 数据自动验证
+        // 数据自动验证 （路由相关）
         if (isset($option['validate'])) {
             $this->autoValidate($option['validate']);
         }
 
-        $data = $this->exec();
+        $data = $this->exec(); // abstract 类， 执行方法，控制器返回的内容
 
         return $this->autoResponse($data);
     }
 
+    /**
+     * 根据控制器的返回内容，自己适应
+     * @param $data
+     * @return Response
+     */
     protected function autoResponse($data)
     {
         if ($data instanceof Response) {
-            $response = $data;
+            $response = $data; // 如果是response 类，直接返回
         } elseif (!is_null($data)) {
+            // 有返回内容时候response的处理逻辑
+
             // 默认自动识别响应输出类型
             $isAjax = $this->request->isAjax();
-            $type   = $isAjax ? $this->rule->getConfig('default_ajax_return') : $this->rule->getConfig('default_return_type');
 
-            $response = Response::create($data, $type);
+            $type   = $isAjax ? $this->rule->getConfig('default_ajax_return') : $this->rule->getConfig('default_return_type');
+        //    var_dump($type);exit;
+            // 这个地方只有在最后一个系统调用的时候会生成response， 之前的中间件只是处理数据，不会生成response
+            $response = Response::create($data, $type); // response 不是用的容器中，而是每次生成
+            // 之所以控制器中不能返回json 是因为如果不是ajax，默认返回的html， response的output 直接返回了数组，这是处理不了的
+            // 但是
         } else {
+            // echo html 语句的时候估计就走着
             $data     = ob_get_clean();
             $content  = false === $data ? '' : $data;
             $status   = '' === $content && $this->request->isAjax() ? 204 : 200;

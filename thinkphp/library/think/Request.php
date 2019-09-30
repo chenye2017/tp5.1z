@@ -2075,7 +2075,7 @@ class Request
      */
     public function getCache()
     {
-        return $this->cache;
+        return $this->cache; // 获取缓存的消息内容
     }
 
     /**

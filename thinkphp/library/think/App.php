@@ -251,7 +251,6 @@ class App extends Container
      //   Loader::addNamespace($this->namespace, $this->appPath); //因为没有用composer __autoload, 所以得自己加载,这个是prs4 ,就相当于往  $prefixLengthsPsr4 $prefixDirsPsr4 ，这两个属性里面写内容
 
 
-
         // 初始化应用
         $this->init();
 
@@ -354,9 +353,10 @@ class App extends Container
                 include $this->thinkPath . 'helper.php';
             }
 
-            // 添加中间件
+            // 添加中间件 (我们自定义的路由中间件)
             if (is_file($path . 'middleware.php')) {
                 $middleware = include $path . 'middleware.php';
+
                 if (is_array($middleware)) {
                     $this->middleware->import($middleware);
                 }
@@ -499,11 +499,18 @@ class App extends Container
             $data     = $exception->getResponse();
         }
 
+       // var_dump($this->middleware->all());exit;
+
         $this->middleware->add(function (Request $request, $next) use ($dispatch, $data) {
+            // var_dump('ppp');
+           // var_dump($data);
+            // 没错误，直接走的run 方法
+            // 这个地方因为 next 用不到了，所以
             return is_null($data) ? $dispatch->run() : $data;
         });
 
-        $response = $this->middleware->dispatch($this->request);
+
+        $response = $this->middleware->dispatch($this->request); // 中间件的执行，包括控制器的执行都在这里面
 
         // 监听app_end
         $this->hook->listen('app_end', $response); // 钩子 app end 执行

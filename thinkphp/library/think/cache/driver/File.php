@@ -164,6 +164,7 @@ class File extends Driver
      */
     public function set($name, $value, $expire = null)
     {
+       // var_dump(1111);
         $this->writeTimes++;
 
         if (is_null($expire)) {

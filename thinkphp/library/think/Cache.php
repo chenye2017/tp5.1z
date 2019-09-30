@@ -61,6 +61,7 @@ class Cache
         }
 
         if (true === $name || !isset($this->instance[$name])) {
+
             $type = !empty($options['type']) ? $options['type'] : 'File';
 
             if (true === $name) {
@@ -127,6 +128,7 @@ class Cache
 
     public function __call($method, $args)
     {
+
         return call_user_func_array([$this->init(), $method], $args);
     }
 

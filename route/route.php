@@ -9,6 +9,29 @@
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
 
+Route::get('/hupu', function () {
+  //  var_dump(13);
+
+    return  \think\facade\Response::create(['name' => '陈野'], 'json');
+
+    return json(['name'=>'陈野']);
+
+    return ['name'=>'cy'];
+    /*\think\facade\Response::contentType('application/json');
+
+    \think\facade\Response::data()*/
+
+    $json = new \think\response\Json();
+    $json->data(['name' => 'cy']);
+    return $json;
+
+   // var_dump(container()->get('response'));
+    //return json([12=>11]);
+
+   // return 12; // 本质上还是装的response 对象 // 这个地方还是不能返回数组的
+});
+
+
 // 这个文件的名称可以随便命名，后期会统一加载
 
 // miss 方法也能支持匿名函数
@@ -16,11 +39,14 @@ Route::miss(function() {
     var_dump('ww');
 });
 
+Route::get('/ss', 'index/Test/index');
+
 
 
 Route::resource('blog', 'index/blog'); // 出现错误，不知道默认调用的是谁
 
 Route::get('blog/:id', function() {
+
     var_dump('read');exit;
 });
 
@@ -66,7 +92,8 @@ Route::get('/yilai', function (\app\index\controller\Behavior $obj) {
 });
 
 \think\facade\Route::get('/:name/:id', function ($id, $name) {
-   var_dump("id is $id, name is $name");
+  // var_dump("id is $id, name is $name");
+   return json_encode(['test'=>'test']);
 });
 
 

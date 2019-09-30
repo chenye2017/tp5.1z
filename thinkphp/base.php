@@ -45,7 +45,7 @@ try {
 //var_dump('222ss');
 
 
-trigger_error('eUSER', E_USER_WARNING); //被 error_handle 处理, error-hanlde 又抛出exception， 给exception_hanlde 处理
+//trigger_error('eUSER', E_USER_WARNING); //被 error_handle 处理, error-hanlde 又抛出exception， 给exception_hanlde 处理
 //require_once 'ss.php'; // 这个地方为什么能捕获到, 因为发出了两个错误信息， 一个warning ,一个error， warning 被 exception_handle 处理， error 是崩溃了， 被register 的函数处理 （即使用了try catch 也不能捕获这个error, 最多捕获warning，这个warning 即使被捕获到，也会php 标准错误处理）
 
 // error 可以返回 false 接着处理

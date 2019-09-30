@@ -256,11 +256,19 @@ class Debug
             //TODO 记录
         } else {
             $output = $trace->output($response, $this->app['log']->getLog());
+
+
+           // var_dump($output, 14, $content);exit;
             if (is_string($output)) {
                 // trace调试信息注入
-                $pos = strripos($content, '</body>');
+                $pos = strripos($content, '</body>'); // 控制器返回内容不是html， 所以找不到 标签
+              //  var_dump($pos);exit;
+
+                // ountput 其实就是trace 样式
+
                 if (false !== $pos) {
                     $content = substr($content, 0, $pos) . $output . substr($content, $pos);
+
                 } else {
                     $content = $content . $output;
                 }

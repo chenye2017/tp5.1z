@@ -129,7 +129,9 @@ class Middleware
      */
     public function dispatch(Request $request, $type = 'route')
     {
-        return call_user_func($this->resolve($type), $request);
+        $res = call_user_func($this->resolve($type), $request);
+       // var_dump('ssss');
+        return  $res;
     }
 
     /**
@@ -171,21 +173,39 @@ class Middleware
         return [[$this->app->make($middleware), 'handle'], isset($param) ? $param : null];
     }
 
+    /**
+     *  这个queue 队列第一个是注册的中间件，后面是官方控制器的执行
+     *  中间件想执行到控制器，就是为了 $next(), 回调函数的执行
+     * @param string $type
+     * @return \Closure
+     */
     protected function resolve($type = 'route')
     {
+       // var_dump('start');
         return function (Request $request) use ($type) {
-
+           // var_dump('kkk');
+            try {
             $middleware = array_shift($this->queue[$type]);
-
+          //  var_dump($this->queue['route']);
             if (null === $middleware) {
                 throw new InvalidArgumentException('The queue was exhausted, with no response returned');
             }
+         //   var_dump('ppppp');
+            } catch (\Exception $e) {
+                var_dump('lllll');
+            }
 
             list($call, $param) = $middleware;
+            // var_dump($middleware);
+           // var_dump('pll');
 
             try {
                 $response = call_user_func_array($call, [$request, $this->resolve($type), $param]);
-            } catch (HttpResponseException $exception) {
+                // 这个地方并没有执行callback  ($this->resolve, 只是返回了一个回调函数)
+                // call_user_func($this->resolve($type))  这样才能执行
+               // var_dump('finish');
+              //  var_dump($response);
+            } catch (HttpResponseException $exception) { //
                 $response = $exception->getResponse();
             }
 
