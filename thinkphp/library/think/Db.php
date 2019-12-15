@@ -66,6 +66,7 @@ class Db
 
     /**
      * 数据库配置
+     *  static 变量，所以也不知道啥时候修改的
      * @var array
      */
     protected static $config = [];
@@ -92,6 +93,7 @@ class Db
     {
         self::$config = $config;
 
+        // 这个方法应该在框架加载的时候执行了
         if (empty($config['query'])) {
             self::$config['query'] = '\\think\\db\\Query';
         }
@@ -124,14 +126,23 @@ class Db
     public static function connect($config = [], $name = false, $query = '')
     {
         // 解析配置参数
+
+
         $options = self::parseConfig($config ?: self::$config);
+
+       // var_dump(11, $options);exit;
 
         $query = $query ?: $options['query'];
 
-        // 创建数据库连接对象实例
-        self::$connection = Connection::instance($options, $name);
 
-        return new $query(self::$connection);
+
+        // 创建数据库连接对象实例
+        self::$connection = Connection::instance($options, $name); //  生成connector 连接器，连接器顺便高了一个mysql builder 对象
+
+
+       // var_dump(self::$connection)
+
+        return new $query(self::$connection); // 这个地方并没有连接
     }
 
     /**
@@ -142,6 +153,8 @@ class Db
      */
     private static function parseConfig($config)
     {
+
+
         if (is_string($config) && false === strpos($config, '/')) {
             // 支持读取配置参数
             $config = isset(self::$config[$config]) ? self::$config[$config] : self::$config;
@@ -167,19 +180,22 @@ class Db
     {
         $info = parse_url($dsnStr);
 
+       // var_dump($info);exit;
+
         if (!$info) {
             return [];
         }
 
         $dsn = [
-            'type'     => $info['scheme'],
+            'type'     => $info['scheme'], // mysq;
             'username' => isset($info['user']) ? $info['user'] : '',
             'password' => isset($info['pass']) ? $info['pass'] : '',
             'hostname' => isset($info['host']) ? $info['host'] : '',
             'hostport' => isset($info['port']) ? $info['port'] : '',
-            'database' => !empty($info['path']) ? ltrim($info['path'], '/') : '',
+            'database' => !empty($info['path']) ? ltrim($info['path'], '/') : '', // 数据库去掉开头
             'charset'  => isset($info['fragment']) ? $info['fragment'] : 'utf8',
         ];
+
 
         if (isset($info['query'])) {
             parse_str($info['query'], $dsn['params']);
@@ -192,6 +208,7 @@ class Db
 
     public static function __callStatic($method, $args)
     {
+        //var_dump(static::connect(), $method, $args);exit;
         return call_user_func_array([static::connect(), $method], $args);
     }
 }

@@ -21,7 +21,7 @@ class Validate
      * 自定义验证类型
      * @var array
      */
-    protected static $type = [];
+    protected static $type = []; // 自定义的验证方法
 
     /**
      * 验证类型别名
@@ -133,7 +133,7 @@ class Validate
      */
     protected $regex = [
         'alphaDash'   => '/^[A-Za-z0-9\-\_]+$/',
-        'chs'         => '/^[\x{4e00}-\x{9fa5}]+$/u',
+        'chs'         => '/^[\x{4e00}-\x{9fa5}]+$/u',  // 汉字的验证
         'chsAlpha'    => '/^[\x{4e00}-\x{9fa5}a-zA-Z]+$/u',
         'chsAlphaNum' => '/^[\x{4e00}-\x{9fa5}a-zA-Z0-9]+$/u',
         'chsDash'     => '/^[\x{4e00}-\x{9fa5}a-zA-Z0-9\_\-]+$/u',
@@ -190,6 +190,7 @@ class Validate
         $this->rule    = $rules + $this->rule;
         $this->message = array_merge($this->message, $message);
         $this->field   = array_merge($this->field, $field);
+        // 感觉这块 +  和 array_merge 影响都不是很大，毕竟初始化的是rule, message ,field 都是空的
     }
 
     /**
@@ -202,7 +203,7 @@ class Validate
      */
     public static function make(array $rules = [], array $message = [], array $field = [])
     {
-        return new self($rules, $message, $field);
+        return new self($rules, $message, $field); //类似生成一个验证器的实例， 初始化
     }
 
     /**
@@ -285,6 +286,7 @@ class Validate
     public function scene($name)
     {
         // 设置当前场景
+        // 这个类中就被设置了
         $this->currentScene = $name;
 
         return $this;
@@ -322,7 +324,7 @@ class Validate
      */
     public function only($fields)
     {
-        $this->only = $fields;
+        $this->only = $fields; // 需要验证的字段
 
         return $this;
     }
@@ -336,6 +338,9 @@ class Validate
      */
     public function remove($field, $rule = null)
     {
+        // remove 不可能移除所有，除非append 中是空
+        // remove 连续移除是ton过个 |
+        // remove append 的最佳实践是二者不要存在顺序关系，因为程序不会鉴别
         if (is_array($field)) {
             foreach ($field as $key => $rule) {
                 if (is_int($key)) {
@@ -348,8 +353,8 @@ class Validate
             if (is_string($rule)) {
                 $rule = explode('|', $rule);
             }
-
-            $this->remove[$field] = $rule;
+         //   var_dump($field, $rule);exit;
+            $this->remove[$field] = $rule; // 所以移除两个，就用 | 连接， 调用两次不成功哦
         }
 
         return $this;
@@ -373,10 +378,10 @@ class Validate
                 $rule = explode('|', $rule);
             }
 
-            $this->append[$field] = $rule;
+            $this->append[$field] = $rule; // 最终都是这样
         }
 
-        return $this;
+        return $this; // 链式调用
     }
 
     /**
@@ -389,21 +394,28 @@ class Validate
      */
     public function check($data, $rules = [], $scene = '')
     {
-        $this->error = [];
+        // 这个check 是validate 的核心，所有的验证方法都是为了这个做准备
+        // 注解的强大，方便代码的跳转
+        // 这个batch 虽然可以不让后面的参数验证断掉，但该参数如果验证失败，就直接断了
+        $this->error = []; // 这个也没有用static ，static 不要乱用，否则在 swoole 那种常驻内存的里面不好修改, 我记得我那个验证组件刚开始用第一次也是清空
 
-        if (empty($rules)) {
+        if (empty($rules)) { // check 中不传的，就用rule 属性，否则就是外面传进来
             // 读取验证规则
-            $rules = $this->rule;
+            $rules = $this->rule; // 这个地方并不受scene 的影响
         }
 
-        // 获取场景定义
+
+
+        // 获取场景定义()
         $this->getScene($scene);
 
+
         foreach ($this->append as $key => $rule) {
-            if (!isset($rules[$key])) {
+            if (!isset($rules[$key])) { // check 中传入的或者原生的rules 为主， append 没有的才会引入
                 $rules[$key] = $rule;
             }
         }
+
 
         foreach ($rules as $key => $rule) {
             // field => 'rule1|rule2...' field => ['rule1','rule2',...]
@@ -411,26 +423,34 @@ class Validate
                 // 字段|描述 用于指定属性名称
                 list($key, $title) = explode('|', $key);
             } else {
-                $title = isset($this->field[$key]) ? $this->field[$key] : $key;
+                $title = isset($this->field[$key]) ? $this->field[$key] : $key; // 感觉是不是有个方法可以单独设置 field 字段
             }
 
-            // 场景检测
+            // 场景检测, scene 就是为了提供only 准备的 （only 这样 [''], 不算empty ， 就可以不接受检测，如果 [] 就必须接受检测）
+            // 如果 only 定义成 [] 直接就淘汰了，所以这块只能定义成 [''] 才能逃脱所有的
             if (!empty($this->only) && !in_array($key, $this->only)) {
                 continue;
             }
 
+
             // 获取数据 支持多维数组
             $value = $this->getDataValue($data, $key);
 
+
             // 字段验证
             if ($rule instanceof \Closure) {
+
                 $result = call_user_func_array($rule, [$value, $data, $title, $this]);
             } elseif ($rule instanceof ValidateRule) {
                 //  验证因子
+                // 这个就是为了添加rule 验证
+
                 $result = $this->checkItem($key, $value, $rule->getRule(), $data, $rule->getTitle() ?: $title, $rule->getMsg());
             } else {
+
                 $result = $this->checkItem($key, $value, $rule, $data, $title);
             }
+
 
             if (true !== $result) {
                 // 没有返回true 则表示验证失败
@@ -517,13 +537,16 @@ class Validate
         }
 
         $i = 0;
+
         foreach ($rules as $key => $rule) {
+
             if ($rule instanceof \Closure) {
                 $result = call_user_func_array($rule, [$value, $data]);
                 $info   = is_numeric($key) ? '' : $key;
             } else {
                 // 判断验证类型
                 list($type, $rule, $info) = $this->getValidateType($key, $rule);
+
 
                 if (isset($this->append[$field]) && in_array($info, $this->append[$field])) {
 
@@ -534,23 +557,30 @@ class Validate
                 }
 
                 if ('must' == $info || 0 === strpos($info, 'require') || (!is_null($value) && '' !== $value)) {
+
+
                     // 验证类型
                     $callback = isset(self::$type[$type]) ? self::$type[$type] : [$this, $type];
+
                     // 验证数据
                     $result = call_user_func_array($callback, [$value, $rule, $data, $field, $title]);
                 } else {
                     $result = true;
                 }
+
             }
 
-            if (false === $result) {
+            if (false === $result) { // 自定义错误不包含这种自定义异常，只能根据不是true 来判断
                 // 验证失败 返回错误信息
+
                 if (!empty($msg[$i])) {
                     $message = $msg[$i];
+
                     if (is_string($message) && strpos($message, '{%') === 0) {
                         $message = facade\Lang::get(substr($message, 2, -1));
                     }
                 } else {
+
                     $message = $this->getRuleMsg($field, $title, $info, $rule);
                 }
 
@@ -566,6 +596,7 @@ class Validate
 
                 return $result;
             }
+
             $i++;
         }
 
@@ -581,6 +612,7 @@ class Validate
      */
     protected function getValidateType($key, $rule)
     {
+
         // 判断验证类型
         if (!is_numeric($key)) {
             return [$key, $rule, $key];
@@ -588,6 +620,7 @@ class Validate
 
         if (strpos($rule, ':')) {
             list($type, $rule) = explode(':', $rule, 2);
+
             if (isset($this->alias[$type])) {
                 // 判断别名
                 $type = $this->alias[$type];
@@ -623,7 +656,7 @@ class Validate
                 $rule = $field . '_confirm';
             }
         }
-
+        // 获取rule 中定义的那个变量内容，比对
         return $this->getDataValue($data, $rule) === $value;
     }
 
@@ -741,7 +774,7 @@ class Validate
                 break;
             case 'activeUrl':
                 // 是否为有效的网址
-                $result = checkdnsrr($value);
+                $result = checkdnsrr($value); // 这个有点坑的就是不能有前面的http://
                 break;
             case 'boolean':
             case 'bool':
@@ -749,10 +782,10 @@ class Validate
                 $result = in_array($value, [true, false, 0, 1, '0', '1'], true);
                 break;
             case 'number':
-                $result = ctype_digit((string) $value);
+                $result = ctype_digit((string) $value); // 全都是数字
                 break;
             case 'alphaNum':
-                $result = ctype_alnum($value);
+                $result = ctype_alnum($value); // 除了字母或者数字不包含别的
                 break;
             case 'array':
                 // 是否为数组
@@ -768,6 +801,8 @@ class Validate
                 $result = $this->token($value, '__token__', $data);
                 break;
             default:
+                // is 里面包含的这些
+
                 if (isset(self::$type[$rule])) {
                     // 注册的验证规则
                     $result = call_user_func_array(self::$type[$rule], [$value]);
@@ -779,6 +814,7 @@ class Validate
                     // Filter_var验证规则
                     $result = $this->filter($value, $this->filter[$rule]);
                 } else {
+
                     // 正则验证
                     $result = $this->regex($value, $rule);
                 }
@@ -1376,10 +1412,12 @@ class Validate
         $rule    = !empty($rule) ? $rule : '__token__';
         $session = Container::get('session');
 
+
         if (!isset($data[$rule]) || !$session->has($rule)) {
             // 令牌数据无效
             return false;
         }
+
 
         // 令牌验证
         if (isset($data[$rule]) && $session->get($rule) === $data[$rule]) {
@@ -1409,6 +1447,7 @@ class Validate
      */
     protected function getDataValue($data, $key)
     {
+
         if (is_numeric($key)) {
             $value = $key;
         } elseif (strpos($key, '.')) {
@@ -1422,6 +1461,7 @@ class Validate
             }
         } else {
             $value = isset($data[$key]) ? $data[$key] : null;
+
         }
 
         return $value;
@@ -1442,6 +1482,7 @@ class Validate
 
         if (isset($this->message[$attribute . '.' . $type])) {
             $msg = $this->message[$attribute . '.' . $type];
+
         } elseif (isset($this->message[$attribute][$type])) {
             $msg = $this->message[$attribute][$type];
         } elseif (isset($this->message[$attribute])) {
@@ -1467,6 +1508,7 @@ class Validate
             } else {
                 $array = array_pad([], 3, '');
             }
+
             $msg = str_replace(
                 [':attribute', ':rule', ':1', ':2', ':3'],
                 [$title, (string) $rule, $array[0], $array[1], $array[2]],
@@ -1478,6 +1520,7 @@ class Validate
 
     /**
      * 获取数据验证的场景
+     * 这个方法本身没有返回值，就是用来设定 only, append, remove 属性的
      * @access protected
      * @param  string $scene  验证场景
      * @return void
@@ -1486,27 +1529,33 @@ class Validate
     {
         if (empty($scene)) {
             // 读取指定场景
-            $scene = $this->currentScene;
+            $scene = $this->currentScene; // scene() 可以设置当前场景
+            // 这个currentScene 感觉在验证完一次就要重置，否则感觉影响下一次的使用
         }
 
+        // 上面两个方式scene 都是空的话，就直接返回空
         if (empty($scene)) {
             return;
         }
 
-        $this->only = $this->append = $this->remove = [];
 
+
+        $this->only = $this->append = $this->remove = []; // 场景需要动态修改额验证规则
+
+        // 这两种scene 方式一样，但是用属性的形式好像就不能自动加方法了
         if (method_exists($this, 'scene' . $scene)) {
-            call_user_func([$this, 'scene' . $scene]);
+            call_user_func([$this, 'scene' . $scene]); // 两种方式验证
         } elseif (isset($this->scene[$scene])) {
             // 如果设置了验证适用场景
             $scene = $this->scene[$scene];
 
             if (is_string($scene)) {
-                $scene = explode(',', $scene);
+                $scene = explode(',', $scene); // 字符串的话分成数组
             }
 
             $this->only = $scene;
         }
+        //var_dump($this->only, $this->remove, $this->append);exit;
     }
 
     /**

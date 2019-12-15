@@ -384,6 +384,7 @@ abstract class Rule
      */
     public function model($var, $model = null, $exception = true)
     {
+        // 只是修改属性，并不动类本身
         if ($var instanceof \Closure) {
             $this->option['model'][] = $var;
         } elseif (is_array($var)) {

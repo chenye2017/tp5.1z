@@ -22,7 +22,7 @@ abstract class Driver
      * 驱动句柄
      * @var object
      */
-    protected $handler = null;
+    public $handler = null;
 
     /**
      * 缓存读取次数
@@ -46,13 +46,13 @@ abstract class Driver
      * 缓存标签
      * @var string
      */
-    protected $tag;
+    protected $tag; // 感觉只有一个
 
     /**
      * 序列化方法
      * @var array
      */
-    protected static $serialize = ['serialize', 'unserialize', 'think_serialize:', 16];
+    protected static $serialize = ['serialize', 'unserialize', 'think_serialize:', 16]; // 默认的序列化方案
 
     /**
      * 判断缓存是否存在
@@ -123,6 +123,7 @@ abstract class Driver
      */
     protected function getExpireTime($expire)
     {
+        // 也不知道第一种是给谁用的
         if ($expire instanceof \DateTime) {
             $expire = $expire->getTimestamp() - time();
         }
@@ -131,7 +132,7 @@ abstract class Driver
     }
 
     /**
-     * 获取实际的缓存标识
+     * 获取实际的缓存标识, redis 的基本没改变，主要就是文件缓存的时候，文件名改变的比较多
      * @access protected
      * @param  string $name 缓存名
      * @return string
@@ -161,6 +162,7 @@ abstract class Driver
 
     /**
      * 如果不存在则写入缓存
+     * 简单的类似分布式锁
      * @access public
      * @param  string    $name 缓存变量名
      * @param  mixed     $value  存储数据
@@ -171,9 +173,11 @@ abstract class Driver
     {
         if (!$this->has($name)) {
             $time = time();
+
+            // 执行5s 每次间隔 0.2 s
             while ($time + 5 > time() && $this->has($name . '_lock')) {
                 // 存在锁定则等待
-                usleep(200000);
+                usleep(200000); // 0.2 s
             }
 
             try {
@@ -190,6 +194,10 @@ abstract class Driver
 
                 // 解锁
                 $this->rm($name . '_lock');
+
+                // 因为现在是 php7 了，所以感觉现在 try catch 都分成两种
+                // 这块不能交给统一处理，因为需要自身删除锁
+
             } catch (\Exception $e) {
                 $this->rm($name . '_lock');
                 throw $e;
@@ -215,11 +223,15 @@ abstract class Driver
     public function tag($name, $keys = null, $overlay = false)
     {
 
+
         if (is_null($name)) {
 
         } elseif (is_null($keys)) {
             $this->tag = $name;
         } else {
+
+
+
             $key = 'tag_' . md5($name);
 
             if (is_string($keys)) {
@@ -228,13 +240,17 @@ abstract class Driver
            // var_dump($keys);
             $keys = array_map([$this, 'getCacheKey'], $keys);
 
+
+
             if ($overlay) {
                 $value = $keys;
             } else {
+
+                // 以前的 tag 和 现在的tag 合并
                 $value = array_unique(array_merge($this->getTagItem($name), $keys));
             }
 
-            $this->set($key, implode(',', $value), 0);
+            $this->set($key, implode(',', $value), 0); // 1个tag对应的多个值连接成string
         }
 
         return $this;
@@ -248,6 +264,7 @@ abstract class Driver
      */
     protected function setTagItem($name)
     {
+        // 这个name 就是要设置的key
         if ($this->tag) {
             $key       = 'tag_' . md5($this->tag);
             $prev      = $this->tag;
@@ -255,12 +272,14 @@ abstract class Driver
 
             if ($this->has($key)) {
                 $value   = explode(',', $this->get($key));
+
                 $value[] = $name;
                 $value   = implode(',', array_unique($value));
             } else {
                 $value = $name;
             }
 
+            // 拼接
             $this->set($key, $value, 0);
             $this->tag = $prev;
         }
@@ -290,15 +309,19 @@ abstract class Driver
      * @param  mixed $data
      * @return string
      */
-    protected function serialize($data)
+    public function serialize($data)
     {
+
+
         if (is_scalar($data) || !$this->options['serialize']) {
+           // var_dump($data);
             return $data;
         }
 
         $serialize = self::$serialize[0];
+       // var_dump(self::$serialize[2], serialize($data), $data);
 
-        return self::$serialize[2] . $serialize($data);
+        return self::$serialize[2] . $serialize($data); // 这个地方是否可以传入额外的参数，比如json_encode  中文
     }
 
     /**
@@ -307,8 +330,9 @@ abstract class Driver
      * @param  string $data
      * @return mixed
      */
-    protected function unserialize($data)
+    public function unserialize($data)
     {
+
         if ($this->options['serialize'] && 0 === strpos($data, self::$serialize[2])) {
             $unserialize = self::$serialize[1];
 
@@ -328,7 +352,7 @@ abstract class Driver
      */
     public static function registerSerialize($serialize, $unserialize, $prefix = 'think_serialize:')
     {
-        self::$serialize = [$serialize, $unserialize, $prefix, strlen($prefix)];
+        self::$serialize = [$serialize, $unserialize, $prefix, strlen($prefix)]; // 想象自身序列化和反序列化的实现
     }
 
     /**

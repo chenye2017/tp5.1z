@@ -92,6 +92,7 @@ class ValidateRule
      */
     protected function addItem($name, $rule = null, $msg = '')
     {
+       // var_dump($name, $rule, $msg);
         if ($rule || 0 === $rule) {
             $this->rule[$name] = $rule;
         } else {

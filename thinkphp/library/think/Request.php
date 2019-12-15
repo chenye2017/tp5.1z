@@ -151,6 +151,12 @@ class Request
      */
     protected $param = [];
 
+    /*public function setP($name,$value)
+    {
+        $this->param[$name] = $value;
+    }*/
+
+
     /**
      * 当前GET参数
      * @var array
@@ -2194,6 +2200,7 @@ class Request
      */
     public function __set($name, $value)
     {
+      //  var_dump(1155555555555555555);
         return $this->param[$name] = $value;
     }
 

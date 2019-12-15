@@ -486,14 +486,18 @@ class Session
      */
     public function has($name, $prefix = null)
     {
+        // 其实就是获取seesion 中自己塞进去的和得到的是否一样，这样登陆倒是挺方便，或者token 的验证
         empty($this->init) && $this->boot();
 
         $prefix = !is_null($prefix) ? $prefix : $this->prefix;
+
         $value  = $prefix ? (!empty($_SESSION[$prefix]) ? $_SESSION[$prefix] : []) : $_SESSION;
 
+       // var_dump($value, $prefix, $_SESSION);exit;
         $name = explode('.', $name);
 
         foreach ($name as $val) {
+
             if (!isset($value[$val])) {
                 return false;
             } else {

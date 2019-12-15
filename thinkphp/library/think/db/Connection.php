@@ -125,7 +125,7 @@ abstract class Connection
 
     // 服务器断线标识字符
     protected $breakMatchStr = [
-        'server has gone away',
+        'server has gone away', // 这个经常碰到，服务器挂了，比如mysql 挂了，redis 挂了
         'no connection to the server',
         'Lost connection',
         'is dead or not enabled',
@@ -153,9 +153,12 @@ abstract class Connection
         }
 
         // 创建Builder对象
-        $class = $this->getBuilderClass();
+        $class = $this->getBuilderClass(); // 获取builder 类名字符串
 
-        $this->builder = new $class($this);
+        $this->builder = new $class($this);// 生成builder mysql
+
+
+      //  sleep(100); 这个地方睡眠，发现连接也没建立
 
         // 执行初始化操作
         $this->initialize();
@@ -180,10 +183,15 @@ abstract class Connection
     public static function instance($config = [], $name = false)
     {
         if (false === $name) {
-            $name = md5(serialize($config));
+            $name = md5(serialize($config)); // 给连接配置名字， 都是老一套的方法了
         }
 
         if (true === $name || !isset(self::$instance[$name])) {
+
+
+
+            // 相同的配置只会走一次
+
             if (empty($config['type'])) {
                 throw new InvalidArgumentException('Undefined db type');
             }
@@ -195,10 +203,12 @@ abstract class Connection
                 $name = md5(serialize($config));
             }
 
-            self::$instance[$name] = Loader::factory($config['type'], '\\think\\db\\connector\\', $config);
-        }
 
+            self::$instance[$name] = Loader::factory($config['type'], '\\think\\db\\connector\\', $config);
+
+        }
         return self::$instance[$name];
+
     }
 
     /**
@@ -208,6 +218,7 @@ abstract class Connection
      */
     public function getBuilderClass()
     {
+
         if (!empty($this->builderClassName)) {
             return $this->builderClassName;
         }
@@ -351,8 +362,9 @@ abstract class Connection
             // 多表不获取字段信息
             return false;
         } else {
-            $tableName = $this->parseSqlTable($tableName);
+            $tableName = $this->parseSqlTable($tableName); // 转换表名成小写
         }
+
 
         // 修正子查询作为表名的问题
         if (strpos($tableName, ')')) {
@@ -362,10 +374,16 @@ abstract class Connection
         list($tableName) = explode(' ', $tableName);
 
         if (false === strpos($tableName, '.')) {
+            // options 里面关于sql 操作的相关信息
+            // database config 的相关信息不在这里面保存
             $schema = $this->getConfig('database') . '.' . $tableName;
         } else {
             $schema = $tableName;
         }
+
+        // 这个schema 好像就叫试图，感觉和表名差不太多
+
+        // 这个 info 好像是记录的所有表的 index
 
         if (!isset(self::$info[$schema])) {
             // 读取缓存
@@ -374,10 +392,15 @@ abstract class Connection
             if (!$this->config['debug'] && is_file($cacheFile)) {
                 $info = include $cacheFile;
             } else {
-                $info = $this->getFields($tableName);
+                $info = $this->getFields($tableName); // 不同类型数据库获取field 的方法不同
             }
 
             $fields = array_keys($info);
+
+
+            // type 里面包含数据类型
+            // bind  绑定的pdo类型
+
             $bind   = $type   = [];
 
             foreach ($info as $key => $val) {
@@ -397,6 +420,10 @@ abstract class Connection
                 $pk = null;
             }
 
+            // 这个fields 代表字段名
+            // type 代表字段类型
+            // bind 代表对应的pdo 类型
+            // pk 代表主键
             self::$info[$schema] = ['fields' => $fields, 'type' => $type, 'bind' => $bind, 'pk' => $pk];
         }
 
@@ -411,6 +438,7 @@ abstract class Connection
      */
     public function getPk($tableName)
     {
+        // 这些方法的核心都是getTableInfo
         return $this->getTableInfo($tableName, 'pk');
     }
 
@@ -502,15 +530,21 @@ abstract class Connection
             $config = array_merge($this->config, $config);
         }
 
+
+
         // 连接参数
         if (isset($config['params']) && is_array($config['params'])) {
-            $params = $config['params'] + $this->params;
+
+
+            // 因为这个我们设置的在前面，所以 用的 相加的方式
+            $params = $config['params'] + $this->params; // 默认的pdo 配置（pdo 的 setAttribute ,一般我设置的就是异常方式）
         } else {
             $params = $this->params;
         }
 
         // 记录当前字段属性大小写设置
         $this->attrCase = $params[PDO::ATTR_CASE];
+
 
         if (!empty($config['break_match_str'])) {
             $this->breakMatchStr = array_merge($this->breakMatchStr, (array) $config['break_match_str']);
@@ -525,7 +559,13 @@ abstract class Connection
                 $startTime = microtime(true);
             }
 
-            $this->links[$linkNum] = new PDO($config['dsn'], $config['username'], $config['password'], $params);
+
+
+            // 因为这里要建立数据库连接，所以要解析配置内容
+            // 感觉这块要是不主动传递 linkNum ,那就始终是 0，始终存在一个连接，后面的连接会把前面的连接替换掉
+            $this->links[$linkNum] = new PDO($config['dsn'], $config['username'], $config['password'], $params); // 这个地方是真正建立连接的地方
+            // 一个脚本可以建立多个连接，但是要是变量被替换，前面这个连接就会断掉
+            // new pdo 能建立一个连接
 
             if ($config['debug']) {
                 // 记录数据库连接信息
@@ -641,9 +681,10 @@ abstract class Connection
      */
     public function query($sql, $bind = [], $master = false, $pdo = false)
     {
+
         $this->initConnect($master);
 
-        if (!$this->linkID) {
+        if (!$this->linkID) { // 这个linkID 就是 pdo 连接
             return false;
         }
 
@@ -659,7 +700,9 @@ abstract class Connection
             $this->debug(true);
 
             // 预处理
-            $this->PDOStatement = $this->linkID->prepare($sql);
+            $this->PDOStatement = $this->linkID->prepare($sql); // 这些query 反正用的都是预处理
+
+
 
             // 是否为存储过程调用
             $procedure = in_array(strtolower(substr(trim($sql), 0, 4)), ['call', 'exec']);
@@ -672,26 +715,30 @@ abstract class Connection
             }
 
             // 执行查询
-            $this->PDOStatement->execute();
+            $this->PDOStatement->execute(); // query 中的 find query 本质上还是调用的connection
 
             // 调试结束
             $this->debug(false, '', $master);
 
+
             // 返回结果集
             return $this->getResult($pdo, $procedure);
         } catch (\PDOException $e) {
+
             if ($this->isBreak($e)) {
                 return $this->close()->query($sql, $bind, $master, $pdo);
             }
 
             throw new PDOException($e, $this->config, $this->getLastsql());
         } catch (\Throwable $e) {
+
             if ($this->isBreak($e)) {
                 return $this->close()->query($sql, $bind, $master, $pdo);
             }
 
             throw $e;
         } catch (\Exception $e) {
+
             if ($this->isBreak($e)) {
                 return $this->close()->query($sql, $bind, $master, $pdo);
             }
@@ -714,6 +761,8 @@ abstract class Connection
      */
     public function execute($sql, $bind = [], Query $query = null)
     {
+        // 这里面就是最原始的pdo的操作
+
         $this->initConnect(true);
 
         if (!$this->linkID) {
@@ -753,10 +802,11 @@ abstract class Connection
                 $query->readMaster();
             }
 
-            $this->numRows = $this->PDOStatement->rowCount();
+            $this->numRows = $this->PDOStatement->rowCount(); // 影响的行数
 
             return $this->numRows;
         } catch (\PDOException $e) {
+
             if ($this->isBreak($e)) {
                 return $this->close()->execute($sql, $bind, $query);
             }
@@ -790,14 +840,18 @@ abstract class Connection
     {
         // 分析查询表达式
         $options = $query->getOptions();
-        $pk      = $query->getPk($options);
+        $pk      = $query->getPk($options); // 获取主键
 
         $data = $options['data'];
-        $query->setOption('limit', 1);
+        $query->setOption('limit', 1); // finde 的 limit 的限制
+
+
 
         if (empty($options['fetch_sql']) && !empty($options['cache'])) {
             // 判断查询缓存
             $cache = $options['cache'];
+
+
 
             if (is_string($cache['key'])) {
                 $key = $cache['key'];
@@ -822,22 +876,28 @@ abstract class Connection
             $data = $item;
         }
 
-        $query->setOption('data', $data);
+
+        $query->setOption('data', $data); // 这个类似 execute 绑定的那些数组参数
 
         // 生成查询SQL
-        $sql = $this->builder->select($query);
+        $sql = $this->builder->select($query); // 这个select 的几个数据库公共生成，一样的
 
-        $query->removeOption('limit');
 
-        $bind = $query->getBind();
+
+        $query->removeOption('limit'); // 删除limit 这个参数
+
+        $bind = $query->getBind(); // pdo 执行的时候绑定的参数
+
 
         if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
         }
 
+
         // 事件回调
-        $result = $query->trigger('before_find');
+        $result = $query->trigger('before_find'); // 事件
+
 
         if (!$result) {
             // 执行查询
@@ -904,12 +964,25 @@ abstract class Connection
             }
         }
 
+
+    //    var_dump($this->builder);exit;
         // 生成查询SQL
         $sql = $this->builder->select($query);
+
+
+
+
+      //  sleep(10000);
+
+       // var_dump($sql);exit;
 
         $query->removeOption('limit');
 
         $bind = $query->getBind();
+
+
+
+      //  var_dump($sql, $bind);exit;
 
         if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
@@ -918,15 +991,31 @@ abstract class Connection
 
         $resultSet = $query->trigger('before_select');
 
+        // 这个为false 才继续执行···
+
         if (!$resultSet) {
-            // 执行查询操作
-            $resultSet = $this->query($sql, $bind, $options['master'], $options['fetch_pdo']);
+            try {
+                // 执行查询操作
+
+
+                $resultSet = $this->query($sql, $bind, $options['master'], $options['fetch_pdo']);
+
+
+            } catch (\Exception $e) {
+
+                var_dump($e->getMessage(), $e->getFile(), $e->getLine());exit;
+            }
 
             if ($resultSet instanceof \PDOStatement) {
                 // 返回PDOStatement对象
+
                 return $resultSet;
             }
         }
+
+       // $options['cache']['expire'] = 60;
+
+      //  var_dump($options['cache']);exit;
 
         if (!empty($options['cache']) && false !== $resultSet) {
             // 缓存数据集
@@ -947,8 +1036,10 @@ abstract class Connection
      */
     public function insert(Query $query, $replace = false, $getLastInsID = false, $sequence = null)
     {
+        // mysql.php 继承了这个类，所以insert 统一先走这个
+
         // 分析查询表达式
-        $options = $query->getOptions();
+        $options = $query->getOptions(); // query 获取他自身所有的options 参数
 
         // 生成SQL语句
         $sql = $this->builder->insert($query, $replace);
@@ -963,8 +1054,13 @@ abstract class Connection
         // 执行操作
         $result = '' == $sql ? 0 : $this->execute($sql, $bind, $query);
 
+
+
         if ($result) {
             $sequence  = $sequence ?: (isset($options['sequence']) ? $options['sequence'] : null);
+
+
+
             $lastInsId = $this->getLastInsID($sequence);
 
             $data = $options['data'];
@@ -978,7 +1074,7 @@ abstract class Connection
 
             $query->setOption('data', $data);
 
-            $query->trigger('after_insert');
+            $query->trigger('after_insert'); // 触发的after insert
 
             if ($getLastInsID) {
                 return $lastInsId;
@@ -1007,12 +1103,13 @@ abstract class Connection
 
         $options = $query->getOptions();
 
+        // 分批更新
         if ($limit) {
             // 分批写入 自动启动事务支持
             $this->startTrans();
 
             try {
-                $array = array_chunk($dataSet, $limit, true);
+                $array = array_chunk($dataSet, $limit, true); // 切分数组，并保留原始键名
                 $count = 0;
 
                 foreach ($array as $item) {
@@ -1029,7 +1126,7 @@ abstract class Connection
                 // 提交事务
                 $this->commit();
             } catch (\Exception $e) {
-                $this->rollback();
+                $this->rollback(); // 回滚之后得异常得抛出
                 throw $e;
             } catch (\Throwable $e) {
                 $this->rollback();
@@ -1086,6 +1183,7 @@ abstract class Connection
      */
     public function update(Query $query)
     {
+
         $options = $query->getOptions();
 
         if (isset($options['cache']) && is_string($options['cache']['key'])) {
@@ -1093,7 +1191,11 @@ abstract class Connection
         }
 
         $pk   = $query->getPk($options);
-        $data = $options['data'];
+        $data = $options['data']; // 这个是要更新的字段, 感觉添加的也存在这里面
+
+       // var_dump($data, $pk);exit;
+
+        // options where 这里面存储的是where 内容
 
         if (empty($options['where'])) {
             // 如果存在主键数据 则自动作为更新条件
@@ -1124,6 +1226,7 @@ abstract class Connection
                 $query->setOption('where', ['AND' => $where]);
             }
         } elseif (!isset($key) && is_string($pk) && isset($options['where']['AND'])) {
+
             foreach ($options['where']['AND'] as $val) {
                 if (is_array($val) && $val[0] == $pk) {
                     $key = $this->getCacheKey($query, $val);
@@ -1131,12 +1234,18 @@ abstract class Connection
             }
         }
 
+
         // 更新数据
         $query->setOption('data', $data);
 
         // 生成UPDATE SQL语句
         $sql  = $this->builder->update($query);
-        $bind = $query->getBind();
+
+        var_dump($sql);
+
+
+
+        $bind = $query->getBind(); // 这个是query 的bind ，和 table 信息的bind 不一样
 
         if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
@@ -1154,7 +1263,7 @@ abstract class Connection
         }
 
         // 执行操作
-        $result = '' == $sql ? 0 : $this->execute($sql, $bind, $query);
+        $result = '' == $sql ? 0 : $this->execute($sql, $bind, $query); // 这个execute 执行一切， 然后都返回影响的行数
 
         if ($result) {
             if (is_string($pk) && isset($where[$pk])) {
@@ -1253,6 +1362,8 @@ abstract class Connection
     {
         $options = $query->getOptions();
 
+       // var_dump($options);exit;
+
         if (empty($options['fetch_sql']) && !empty($options['cache'])) {
             $cache  = $options['cache'];
             $result = $this->getCacheData($query, $cache, null, $key);
@@ -1263,18 +1374,22 @@ abstract class Connection
         }
 
         if (isset($options['field'])) {
-            $query->removeOption('field');
+            $query->removeOption('field'); // 这个地方query 没有返回
         }
+
 
         if (is_string($field)) {
             $field = array_map('trim', explode(',', $field));
         }
 
-        $query->setOption('field', $field);
+        $query->setOption('field', $field); // 这块修改了绑定的field
+
+
+
         $query->setOption('limit', 1);
 
         // 生成查询SQL
-        $sql = $this->builder->select($query);
+        $sql = $this->builder->select($query); // 查询的都是 select
 
         if (isset($options['field'])) {
             $query->setOption('field', $options['field']);
@@ -1294,7 +1409,9 @@ abstract class Connection
         // 执行查询操作
         $pdo = $this->query($sql, $bind, $options['master'], true);
 
-        $result = $pdo->fetchColumn();
+        $result = $pdo->fetchColumn(); // 这个 pdo 其实是  execute 预处理之后的pdoStatement
+
+        // 返回单独一行
 
         if (isset($cache) && false !== $result) {
             // 缓存数据
@@ -1380,7 +1497,10 @@ abstract class Connection
         }
 
         // 执行查询操作
-        $pdo = $this->query($sql, $bind, $options['master'], true);
+        $pdo = $this->query($sql, $bind, $options['master'], true); // 这个query 就是 execute 之后待处理的值
+
+
+
 
         if (1 == $pdo->columnCount()) {
             $result = $pdo->fetchAll(PDO::FETCH_COLUMN);
@@ -1391,6 +1511,9 @@ abstract class Connection
                 $result = array_column($resultSet, null, $key);
             } elseif ($resultSet) {
                 $fields = array_keys($resultSet[0]);
+
+                var_dump($fields);exit;
+
                 $count  = count($fields);
                 $key1   = array_shift($fields);
                 $key2   = $fields ? array_shift($fields) : '';
@@ -1874,6 +1997,7 @@ abstract class Connection
      */
     public function getLastInsID($sequence = null)
     {
+        // linkId 是 pdo ， 也就是一个连接
         return $this->linkID->lastInsertId($sequence);
     }
 
@@ -1964,7 +2088,7 @@ abstract class Connection
      */
     protected function triggerSql($sql, $runtime, $explain = [], $master = false)
     {
-        if (!empty(self::$event)) {
+        if (!empty(self::$event)) { // 这个地方会回调 Db::listen 的事件
             foreach (self::$event as $callback) {
                 if (is_callable($callback)) {
                     call_user_func_array($callback, [$sql, $runtime, $explain, $master]);
@@ -2000,6 +2124,8 @@ abstract class Connection
      */
     protected function initConnect($master = true)
     {
+     //   var_dump($this->linkID);exit;
+
         if (!empty($this->config['deploy'])) {
             // 采用分布式数据库
             if ($master || $this->transTimes) {
@@ -2016,6 +2142,7 @@ abstract class Connection
                 $this->linkID = $this->linkRead;
             }
         } elseif (!$this->linkID) {
+
             // 默认单数据库
             $this->linkID = $this->connect();
         }
@@ -2097,6 +2224,9 @@ abstract class Connection
         if (isset($config['tag'])) {
             $cache->tag($config['tag'])->set($key, $data, $config['expire']);
         } else {
+
+            var_dump($key);exit;
+
             $cache->set($key, $data, $config['expire']);
         }
     }
@@ -2126,6 +2256,8 @@ abstract class Connection
      */
     protected function getCacheKey(Query $query, $value)
     {
+
+
         if (is_scalar($value)) {
             $data = $value;
         } elseif (is_array($value) && isset($value[1], $value[2]) && in_array($value[1], ['=', 'eq'], true) && is_scalar($value[2])) {

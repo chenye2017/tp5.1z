@@ -18,6 +18,7 @@ class Controller
 {
     use Jump;
 
+
     /**
      * 视图类实例
      * @var \think\View
@@ -246,13 +247,17 @@ class Controller
                 // 支持场景
                 list($validate, $scene) = explode('.', $validate);
             }
-            $v = $this->app->validate($validate);
-            if (!empty($scene)) {
+
+            $v = $this->app->validate($validate); // 这个地方从容器中，或者自己生成验证器类
+
+
+            if (!empty($scene)) { // 如果有scene，把当前的scene 设定到验证器的当前场景中
                 $v->scene($scene);
             }
         }
 
         // 是否批量验证
+        // 控制器中如果设置批量验证，则这个控制器中所有的验证都会被设定成批量验证
         if ($batch || $this->batchValidate) {
             $v->batch(true);
         }
@@ -267,7 +272,7 @@ class Controller
 
         if (!$v->check($data)) {
             if ($this->failException) {
-                throw new ValidateException($v->getError());
+                throw new ValidateException($v->getError()); // 控制器这块验证抛出异常
             }
             return $v->getError();
         }

@@ -440,6 +440,7 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
     public function invoke($callable, $vars = [])
     {
         if ($callable instanceof Closure) { // 执行回调方法
+
             return $this->invokeFunction($callable, $vars);
         }
 
@@ -499,26 +500,40 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
 
         // 判断数组类型 数字数组时按顺序绑定参数
         reset($vars);
-        $type   = key($vars) === 0 ? 1 : 0; // 判断是索引数组还是关联数组
-        $params = $reflect->getParameters(); // 获取参数
+        $type   = key($vars) === 0 ? 1 : 0; // 判断传入的参数是索引数组还是关联数组 （像url传递都是带参数名称的）
+        $params = $reflect->getParameters(); // 获取参数名称
+
+    //    var_dump($params, $type, key($vars), $vars);
+
+        // 这个type 就计算一次，真的蛮傻的
+
+        // type 0 的情况下
+        // 如果路由是callback， 以来的普通参数都通过参数名称，在获取的参数中 通过 $param[$name] 形式查找，所以没有顺序要求，但要求名称一致
+        // 如果是 依赖类，会直接获取第一个参数，判断是否是，不是的话生成，是的话直接array_shift 使用
 
         foreach ($params as $param) {
+        //    var_dump($vars, 'end');
             $name      = $param->getName(); // 参数名称
             $lowerName = Loader::parseName($name); // 参数名称标准化
             $class     = $param->getClass(); // 参数的类型
-
+//var_dump($name, $vars);
             if ($class) {
+            //    var_dump($class);
                 $args[] = $this->getObjectParam($class->getName(), $vars); // 有用类实例的，就不分关联和索引了
             } elseif (1 == $type && !empty($vars)) {
                 $args[] = array_shift($vars); // 索引数组，每次从头部取一个数据放到参数里面
             } elseif (0 == $type && isset($vars[$name])) {
                 $args[] = $vars[$name];
+             //   var_dump($name,$args);
             } elseif (0 == $type && isset($vars[$lowerName])) {
-                $args[] = $vars[$lowerName];
-            } elseif ($param->isDefaultValueAvailable()) {
 
+                $args[] = $vars[$lowerName];
+              //  var_dump($args);
+            } elseif ($param->isDefaultValueAvailable()) {
+           //     var_dump(11111);
                 $args[] = $param->getDefaultValue();
             } else {
+                var_dump(11111);
                 throw new InvalidArgumentException('method param miss:' . $name);
             }
         }
@@ -538,10 +553,12 @@ class Container implements ArrayAccess, IteratorAggregate, Countable
         $array = $vars;
         $value = array_shift($array);
 
+//var_dump($array, $value, $value instanceof $className, $className);
         if ($value instanceof $className) { // 如果传入的参数和对应的类类型一致，参考laravel controller，，可以定义参数 Request $request, 这时候就不用自动注入了，就是直接传入了，
             $result = $value;
-            array_shift($vars);
+            array_shift($vars); // 如果传入的是依赖类，所有的都往前添加参数
         } else {
+         //   var_dump($className);
             $result = $this->make($className); // 自动注入
         }
 

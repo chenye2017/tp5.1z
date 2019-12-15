@@ -116,6 +116,7 @@ if (!function_exists('cache')) {
      */
     function cache($name, $value = '', $options = null, $tag = null)
     {
+        // 这个cache 用的是facade ，所以是从container 中获取的实例
         if (is_array($options)) {
             // 缓存操作的同时初始化
             Cache::connect($options);

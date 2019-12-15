@@ -13,7 +13,7 @@
 
 <script>
 
-    $.get({
+   /* $.get({
         url: "http://tp51.test/test/2",
         xhrFields: {
             withCredentials: true // 这里设置了withCredentials
@@ -23,8 +23,21 @@
         }
     }, function (result) {
 
-    });
+    });*/
 
+   function test()
+   {
+       return new Promise((resolve, reject) => {
+           resolve(11)
+       })
+   }
+
+   test().then((num) => {
+       console.log(num)
+     //  return 12
+   }).then((num) => {
+       console.log(num)
+   })
 
 </script>
 

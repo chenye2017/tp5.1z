@@ -132,6 +132,7 @@ class Loader
     // 自动加载
     public static function autoload($class)
     {
+
         //var_dump(11,self::$classAlias);exit;
         if (isset(self::$classAlias[$class])) {
             return class_alias(self::$classAlias[$class], $class);
@@ -178,6 +179,7 @@ class Loader
             }
         }
 
+      //  var_dump(self::$fallbackDirsPsr4);
         // 查找 PSR-4 fallback dirs
         foreach (self::$fallbackDirsPsr4 as $dir) {
             if (is_file($file = $dir . DIRECTORY_SEPARATOR . $logicalPathPsr4)) {
@@ -327,6 +329,7 @@ class Loader
     // 注册自动加载类库目录
     public static function addAutoLoadDir($path)
     {
+        //var_dump($path);
         self::$fallbackDirsPsr4[] = $path;
     }
 

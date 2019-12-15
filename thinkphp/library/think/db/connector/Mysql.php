@@ -30,6 +30,7 @@ class Mysql extends Connection
      */
     protected function initialize()
     {
+
         // Point类型支持
         Query::extend('point', function ($query, $field, $value = null, $fun = 'GeomFromText', $type = 'POINT') {
             if (!is_null($value)) {
@@ -43,6 +44,8 @@ class Mysql extends Connection
 
             return $query;
         });
+
+
     }
 
     /**
@@ -86,14 +89,16 @@ class Mysql extends Connection
             $tableName = '`' . $tableName . '`';
         }
 
-        $sql    = 'SHOW COLUMNS FROM ' . $tableName;
-        $pdo    = $this->query($sql, [], false, true);
-        $result = $pdo->fetchAll(PDO::FETCH_ASSOC);
+        $sql    = 'SHOW COLUMNS FROM ' . $tableName; // mysql 获取 table 中所有字段
+        $pdo    = $this->query($sql, [], false, true); // 查看各个表结构还是在connector 自己的驱动当中
+        $result = $pdo->fetchAll(PDO::FETCH_ASSOC); // pdo 的 query 貌似能执行很多 获取操作 ,比redis 的命令操作厉害的多
         $info   = [];
+
+        // 这个result 不包括字段解释
 
         if ($result) {
             foreach ($result as $key => $val) {
-                $val                 = array_change_key_case($val);
+                $val                 = array_change_key_case($val); // 默认全改成小写
                 $info[$val['field']] = [
                     'name'    => $val['field'],
                     'type'    => $val['type'],

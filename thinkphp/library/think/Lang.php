@@ -169,7 +169,8 @@ class Lang
         }
 
         $key   = strtolower($name);
-        $value = isset($this->lang[$range][$key]) ? $this->lang[$range][$key] : $name;
+        $value = isset($this->lang[$range][$key]) ? $this->lang[$range][$key] : $name; // 英文转中文
+
 
         // 变量解析
         if (!empty($vars) && is_array($vars)) {

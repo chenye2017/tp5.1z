@@ -61,20 +61,30 @@ class Mysql extends Builder
         // 获取绑定信息
         $bind = $this->connection->getFieldsBind($options['table']);
 
-        foreach ($dataSet as $k => $data) {
-            $data = $this->parseData($query, $data, $allowFields, $bind, '_' . $k);
 
-            $values[] = '( ' . implode(',', array_values($data)) . ' )';
+       // dataSet 是数组，所以需要循环
+        foreach ($dataSet as $k => $data) {
+
+            $data = $this->parseData($query, $data, $allowFields, $bind); // 生成绑定的参数
+
+
+            $values[] = '( ' . implode(',', array_values($data)) . ' )'; // 这个地方拼接了多个value
+
 
             if (!isset($insertFields)) {
-                $insertFields = array_keys($data);
+                $insertFields = array_keys($data); // 这个insertFields 只需要保存一次就好了
             }
         }
 
+
+        // 这个insertFields 也是根据插入的数据来的
         $fields = [];
         foreach ($insertFields as $field) {
-            $fields[] = $this->parseKey($query, $field);
+            $fields[] = $this->parseKey($query, $field); // 需要插入的key
         }
+
+
+
 
         return str_replace(
             ['%INSERT%', '%TABLE%', '%FIELD%', '%DATA%', '%COMMENT%'],
@@ -105,6 +115,7 @@ class Mysql extends Builder
 
     /**
      * 字段和表名处理
+     *  相比较统一的parseKey 这个复杂的多
      * @access public
      * @param  Query     $query 查询对象
      * @param  mixed     $key   字段名
@@ -145,9 +156,11 @@ class Mysql extends Builder
             throw new Exception('not support data:' . $key);
         }
 
+
         if ('*' != $key && ($strict || !preg_match('/[,\'\"\*\(\)`.\s]/', $key))) {
-            $key = '`' . $key . '`';
+            $key = '`' . $key . '`'; // 给表和字段加标识
         }
+
 
         if (isset($table)) {
             if (strpos($table, '.')) {

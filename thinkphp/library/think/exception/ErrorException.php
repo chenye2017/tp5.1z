@@ -18,6 +18,8 @@ use think\Exception;
  * 主要用于封装 set_error_handler 和 register_shutdown_function 得到的错误
  * 除开从 think\Exception 继承的功能
  * 其他和PHP系统\ErrorException功能基本一样，setData的功能
+ *
+ * 这个类似e_warning  e_user 这些错误
  */
 class ErrorException extends Exception
 {
@@ -37,7 +39,7 @@ class ErrorException extends Exception
      */
     public function __construct($severity, $message, $file, $line)
     {
-        $this->severity = $severity;
+        $this->severity = $severity; // 这个就是 e_user_warning 这些东西
         $this->message  = $message;
         $this->file     = $file;
         $this->line     = $line;

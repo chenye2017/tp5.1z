@@ -39,11 +39,11 @@ abstract class Builder
     // SQL表达式
     protected $selectSql = 'SELECT%DISTINCT% %FIELD% FROM %TABLE%%FORCE%%JOIN%%WHERE%%GROUP%%HAVING%%UNION%%ORDER%%LIMIT% %LOCK%%COMMENT%';
 
-    protected $insertSql = '%INSERT% INTO %TABLE% (%FIELD%) VALUES (%DATA%) %COMMENT%';
+    protected $insertSql = '%INSERT% INTO %TABLE% (%FIELD%) VALUES (%DATA%) %COMMENT%'; // 注意和下面的insert all 的区别
 
     protected $insertAllSql = '%INSERT% INTO %TABLE% (%FIELD%) %DATA% %COMMENT%';
 
-    protected $updateSql = 'UPDATE %TABLE% SET %SET%%JOIN%%WHERE%%ORDER%%LIMIT% %LOCK%%COMMENT%';
+    protected $updateSql = 'UPDATE %TABLE% SET %SET%%JOIN%%WHERE%%ORDER%%LIMIT% %LOCK%%COMMENT%'; // 这个lock 基本没用过
 
     protected $deleteSql = 'DELETE FROM %TABLE%%USING%%JOIN%%WHERE%%ORDER%%LIMIT% %LOCK%%COMMENT%';
 
@@ -99,28 +99,39 @@ abstract class Builder
 
         // 获取绑定信息
         if (empty($bind)) {
-            $bind = $this->connection->getFieldsBind($options['table']);
+            $bind = $this->connection->getFieldsBind($options['table']); // 并不是绑定的参数，而是数据类型
         }
+
+
 
         if (empty($fields)) {
             if ('*' == $options['field']) {
-                $fields = array_keys($bind);
+                $fields = array_keys($bind); // 这个bind 是表的所有信息
             } else {
-                $fields = $options['field'];
+                $fields = $options['field']; // 这个是用户 表达式添加的信息
             }
         }
 
+        // options 是 修改的 字段类型
+        // fields 是 自己传入的bind 参数涉及的类型
+
         $result = [];
 
+
+     //   var_dump($query->getBind(), $data);exit;
+        // data 是传入的数据绑定， 单条数据的data
         foreach ($data as $key => $val) {
+
             if ('*' != $options['field'] && !in_array($key, $fields, true)) {
                 continue;
             }
 
-            $item = $this->parseKey($query, $key, true);
+            $item = $this->parseKey($query, $key, true); // 获取字段名
+
+
 
             if ($val instanceof Expression) {
-                $result[$item] = $val->getValue();
+                $result[$item] = $val->getValue(); // expression 走的这里
                 continue;
             } elseif (!is_scalar($val) && (in_array($key, (array) $query->getOptions('json')) || 'json' == $this->connection->getFieldsType($options['table'], $key))) {
                 $val = json_encode($val, JSON_UNESCAPED_UNICODE);
@@ -129,12 +140,14 @@ abstract class Builder
                 $val = $val->__toString();
             }
 
+
+            // 针对json 类型
             if (false !== strpos($key, '->')) {
                 list($key, $name) = explode('->', $key);
                 $item             = $this->parseKey($query, $key);
                 $result[$item]    = 'json_set(' . $item . ', \'$.' . $name . '\', ' . $this->parseDataBind($query, $key, $val, $bind) . ')';
             } elseif ('*' == $options['field'] && false === strpos($key, '.') && !in_array($key, $fields, true)) {
-                if ($options['strict']) {
+                if ($options['strict']) { // 这个地方设置了严格模式
                     throw new Exception('fields not exists:[' . $key . ']');
                 }
             } elseif (is_null($val)) {
@@ -152,9 +165,11 @@ abstract class Builder
                 }
             } elseif (is_scalar($val)) {
                 // 过滤非标量数据
+                // 普通的绑定走这里
                 $result[$item] = $this->parseDataBind($query, $key, $val, $bind);
             }
         }
+
 
         return $result;
     }
@@ -189,6 +204,7 @@ abstract class Builder
      */
     public function parseKey(Query $query, $key, $strict = false)
     {
+
         return $key instanceof Expression ? $key->getValue() : $key;
     }
 
@@ -238,15 +254,16 @@ abstract class Builder
                 $key    = $this->connection->parseSqlTable($key);
                 $item[] = $this->parseKey($query, $key) . ' ' . $this->parseKey($query, $table);
             } else {
-                $table = $this->connection->parseSqlTable($table);
+                $table = $this->connection->parseSqlTable($table); // 表名转换
 
                 if (isset($options['alias'][$table])) {
                     $item[] = $this->parseKey($query, $table) . ' ' . $this->parseKey($query, $options['alias'][$table]);
                 } else {
-                    $item[] = $this->parseKey($query, $table);
+                    $item[] = $this->parseKey($query, $table); // 这个table 名称也能用表达式
                 }
             }
         }
+    //    var_dump(implode(',', $item));exit;
 
         return implode(',', $item);
     }
@@ -290,6 +307,8 @@ abstract class Builder
 
         $whereStr = '';
         $binds    = $this->connection->getFieldsBind($query->getOptions('table'));
+
+
 
         foreach ($where as $logic => $val) {
             $str = [];
@@ -354,6 +373,7 @@ abstract class Builder
             }
 
             $whereStr .= empty($whereStr) ? substr(implode(' ', $str), strlen($logic) + 1) : implode(' ', $str);
+
         }
 
         return $whereStr;
@@ -362,6 +382,8 @@ abstract class Builder
     // where子单元分析
     protected function parseWhereItem(Query $query, $field, $val, $rule = '', $binds = [])
     {
+
+      //  var_dump($field, $this->parseKey($query, $field, true));exit;
         // 字段分析
         $key = $field ? $this->parseKey($query, $field, true) : '';
 
@@ -390,6 +412,7 @@ abstract class Builder
             return '( ' . implode(' ' . $rule . ' ', $str) . ' )';
         }
 
+
         // 检测操作符
         $exp = strtoupper($exp);
         if (isset($this->exp[$exp])) {
@@ -400,6 +423,7 @@ abstract class Builder
 
         } elseif (is_object($value) && method_exists($value, '__toString')) {
             // 对象数据写入
+
             $value = $value->__toString();
         }
 
@@ -888,9 +912,13 @@ abstract class Builder
      */
     protected function parseComment(Query $query, $comment)
     {
+       // $comment = '/* 你好 */'; 不太了解这个的作用
+
         if (false !== strpos($comment, '*/')) {
             $comment = strstr($comment, '*/', true);
         }
+
+
 
         return !empty($comment) ? ' /* ' . $comment . ' */' : '';
     }
@@ -904,6 +932,7 @@ abstract class Builder
      */
     protected function parseDistinct(Query $query, $distinct)
     {
+
         return !empty($distinct) ? ' DISTINCT ' : '';
     }
 
@@ -943,6 +972,8 @@ abstract class Builder
      */
     protected function parseForce(Query $query, $index)
     {
+
+
         if (empty($index)) {
             return '';
         }
@@ -974,7 +1005,9 @@ abstract class Builder
      */
     public function select(Query $query)
     {
+
         $options = $query->getOptions();
+
 
         return str_replace(
             ['%TABLE%', '%DISTINCT%', '%FIELD%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%', '%UNION%', '%LOCK%', '%COMMENT%', '%FORCE%'],
@@ -1005,10 +1038,12 @@ abstract class Builder
      */
     public function insert(Query $query, $replace = false)
     {
-        $options = $query->getOptions();
+        // 这个builder 统一的，像 insert all 就不是统一的
+
+        $options = $query->getOptions(); // 这个options 参数真的很重要，很多参数中都获取
 
         // 分析并处理数据
-        $data = $this->parseData($query, $options['data']);
+        $data = $this->parseData($query, $options['data']); // 获取绑定的采纳数
         if (empty($data)) {
             return '';
         }
@@ -1016,20 +1051,25 @@ abstract class Builder
         $fields = array_keys($data);
         $values = array_values($data);
 
+       // 这个options comment
+
+
+
         return str_replace(
             ['%INSERT%', '%TABLE%', '%FIELD%', '%DATA%', '%COMMENT%'],
             [
-                $replace ? 'REPLACE' : 'INSERT',
+                $replace ? 'REPLACE' : 'INSERT', // 使用replace 还是 insert， replace 有坑，慎用
                 $this->parseTable($query, $options['table']),
                 implode(' , ', $fields),
                 implode(' , ', $values),
-                $this->parseComment($query, $options['comment']),
+                $this->parseComment($query, $options['comment']), // options comment 是我们查询的时候调用的comment方法赋值
             ],
             $this->insertSql);
     }
 
     /**
      * 生成insertall SQL
+     *  mysql 的 insert all 和这个很像
      * @access public
      * @param  Query     $query   查询对象
      * @param  array     $dataSet 数据集
@@ -1041,8 +1081,8 @@ abstract class Builder
         $options = $query->getOptions();
 
         // 获取合法的字段
-        if ('*' == $options['field']) {
-            $allowFields = $this->connection->getTableFields($options['table']);
+        if ('*' == $options['field']) { // 这个字段在orm 里面用的比较多
+            $allowFields = $this->connection->getTableFields($options['table']); // 这个就是获取所有的字段
         } else {
             $allowFields = $options['field'];
         }
@@ -1118,6 +1158,7 @@ abstract class Builder
         foreach ($data as $key => $val) {
             $set[] = $key . ' = ' . $val;
         }
+
 
         return str_replace(
             ['%TABLE%', '%SET%', '%JOIN%', '%WHERE%', '%ORDER%', '%LIMIT%', '%LOCK%', '%COMMENT%'],

@@ -17,7 +17,7 @@ use think\cache\Driver;
  * Redis缓存驱动，适合单机部署、有前端代理实现高可用的场景，性能最好
  * 有需要在业务层实现读写分离、或者使用RedisCluster的需求，请使用Redisd驱动
  *
- * 要求安装phpredis扩展：https://github.com/nicolasff/phpredis
+ * 要求安装phpredis扩展：https://github.com/nicolasff/phpredis （这是 c 实现的redis 扩展）
  * @author    尘缘 <130775@qq.com>
  */
 class Redis extends Driver
@@ -46,7 +46,7 @@ class Redis extends Driver
         }
 
         if (extension_loaded('redis')) {
-            $this->handler = new \Redis;
+            $this->handler = new \Redis; //  cache 和 driver 都有 handler这个属性， cache 的 handle 是各个driver 类，比如我们这个 redis类， 当前driver 的handle 这个属性，才是真正的处理句柄
 
             if ($this->options['persistent']) {
                 $this->handler->pconnect($this->options['host'], $this->options['port'], $this->options['timeout'], 'persistent_id_' . $this->options['select']);
@@ -61,7 +61,7 @@ class Redis extends Driver
             if (0 != $this->options['select']) {
                 $this->handler->select($this->options['select']);
             }
-        } elseif (class_exists('\Predis\Client')) {
+        } elseif (class_exists('\Predis\Client')) { // php 写的redis 扩展
             $params = [];
             foreach ($this->options as $key => $val) {
                 if (in_array($key, ['aggregate', 'cluster', 'connections', 'exceptions', 'prefix', 'profile', 'replication', 'parameters'])) {
@@ -98,6 +98,7 @@ class Redis extends Driver
      */
     public function get($name, $default = false)
     {
+
         $this->readTimes++;
 
         $value = $this->handler->get($this->getCacheKey($name));
@@ -119,12 +120,17 @@ class Redis extends Driver
      */
     public function set($name, $value, $expire = null)
     {
+       // var_dump($this->handler);exit;
+
         $this->writeTimes++;
 
         if (is_null($expire)) {
-            $expire = $this->options['expire'];
+            $expire = $this->options['expire']; // 这个redis 没有expire ，就给默认expire，和file不太一样
         }
+      //  var_dump($this->tag);exit;
+       // var_dump($this->tag , !$this->has($name));exit;
 
+        // 在这个tag 设置之前的，不设置true
         if ($this->tag && !$this->has($name)) {
             $first = true;
         }
@@ -134,12 +140,16 @@ class Redis extends Driver
 
         $value = $this->serialize($value);
 
+        // 其实思考了下，这个地方就是简单的当做缓存，所以不需要考虑 序列化 json 额外的参数
+        // 这块也是只能用 string 类型
         if ($expire) {
             $result = $this->handler->setex($key, $expire, $value);
         } else {
+
             $result = $this->handler->set($key, $value);
         }
 
+        // 设置tag 之后以后生成标签都生效
         isset($first) && $this->setTagItem($key);
 
         return $result;
@@ -212,7 +222,18 @@ class Redis extends Driver
 
         $this->writeTimes++;
 
+        // 这个clear 真的可怕，如果没有tag， 清除了所有的redis 默认库的key
         return $this->handler->flushDB();
+    }
+
+    public function json_encode($data)
+    {
+        return json_encode($data, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+    }
+
+    public function json_decode($data)
+    {
+        return json_decode($data, 1);
     }
 
 }

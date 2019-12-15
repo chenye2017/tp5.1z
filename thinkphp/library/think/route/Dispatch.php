@@ -180,6 +180,8 @@ abstract class Dispatch
      */
     protected function autoResponse($data)
     {
+
+
         if ($data instanceof Response) {
             $response = $data; // 如果是response 类，直接返回
         } elseif (!is_null($data)) {
@@ -195,11 +197,15 @@ abstract class Dispatch
             // 之所以控制器中不能返回json 是因为如果不是ajax，默认返回的html， response的output 直接返回了数组，这是处理不了的
             // 但是
         } else {
+
+         //   var_dump(1111);exit;
+
             // echo html 语句的时候估计就走着
             $data     = ob_get_clean();
             $content  = false === $data ? '' : $data;
             $status   = '' === $content && $this->request->isAjax() ? 204 : 200;
-            $response = Response::create($content, '', $status);
+            $response = Response::create($content, '', $status); // type 就是默认的，即使是ajax
+          //  var_dump($response);exit;
         }
 
         return $response;

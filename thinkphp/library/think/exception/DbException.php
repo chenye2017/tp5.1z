@@ -26,7 +26,7 @@ class DbException extends Exception
      * @param  string    $sql
      * @param  int       $code
      */
-    public function __construct($message, array $config, $sql, $code = 10500)
+    public function __construct($message, array $config = [], $sql = '', $code = 10500)
     {
         $this->message = $message;
         $this->code    = $code; // 应该是类似自定义的code
@@ -37,7 +37,7 @@ class DbException extends Exception
             'Error SQL'     => $sql,
         ]);
 
-        unset($config['username'], $config['password']);
+        unset($config['username'], $config['password']); // 还真的挺细节
         $this->setData('Database Config', $config);
     }
 

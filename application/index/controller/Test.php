@@ -9,6 +9,7 @@
 namespace app\index\controller;
 
 
+use app\index\model\Danmu;
 use think\Controller;
 use think\Request;
 
@@ -16,6 +17,14 @@ class Test extends Controller
 {
     public function index(Request $request)
     {
+        try {
+            $danmu = new Danmu();
+            var_dump($danmu->all());
+        } catch (\Exception $e) {
+            var_dump($e->getMessage());
+        }
+        exit;
+
         return ['ss'=>111];
 
         var_dump(getallheaders());exit;

@@ -39,8 +39,10 @@ class File extends Driver
     public function __construct($options = [])
     {
         if (!empty($options)) {
-            $this->options = array_merge($this->options, $options);
+            $this->options = array_merge($this->options, $options); // 这个options 是用户自定义的， 和默认的合并
         }
+
+
 
         if (empty($this->options['path'])) {
             $this->options['path'] = Container::get('app')->getRuntimePath() . 'cache' . DIRECTORY_SEPARATOR;
@@ -78,14 +80,17 @@ class File extends Driver
      */
     protected function getCacheKey($name, $auto = false)
     {
+
+
         $name = hash($this->options['hash_type'], $name);
+       // var_dump($this, $name);
 
         if ($this->options['cache_subdir']) {
-            // 使用子目录
+            // 使用子目录, 其实也就是把那个hash 字符串前两位提取出来，整成一个单独的目录
             $name = substr($name, 0, 2) . DIRECTORY_SEPARATOR . substr($name, 2);
         }
 
-        if ($this->options['prefix']) {
+        if ($this->options['prefix']) { // 这个prefix 是目录前缀
             $name = $this->options['prefix'] . DIRECTORY_SEPARATOR . $name;
         }
 
@@ -135,13 +140,14 @@ class File extends Driver
 
         if (false !== $content) {
             $expire = (int) substr($content, 8, 12);
+
             if (0 != $expire && time() > filemtime($filename) + $expire) {
                 //缓存过期删除缓存文件
-                $this->unlink($filename);
+                $this->unlink($filename); // 文件并不能给存在时间，所以只有在获取该文件的时候检测是否该过期，如果过期，主动删除
                 return $default;
             }
 
-            $this->expire = $expire;
+            $this->expire = $expire;  // 0 应该就代表不过期
             $content      = substr($content, 32);
 
             if ($this->options['data_compress'] && function_exists('gzcompress')) {
@@ -150,6 +156,7 @@ class File extends Driver
             }
             return $this->unserialize($content);
         } else {
+            // 如果没有获取到值， 给默认值
             return $default;
         }
     }
@@ -164,7 +171,7 @@ class File extends Driver
      */
     public function set($name, $value, $expire = null)
     {
-       // var_dump(1111);
+
         $this->writeTimes++;
 
         if (is_null($expire)) {
@@ -173,6 +180,7 @@ class File extends Driver
 
         $expire   = $this->getExpireTime($expire);
         $filename = $this->getCacheKey($name, true);
+
 
         if ($this->tag && !is_file($filename)) {
             $first = true;
@@ -187,6 +195,7 @@ class File extends Driver
 
         $data   = "<?php\n//" . sprintf('%012d', $expire) . "\n exit();?>\n" . $data;
         $result = file_put_contents($filename, $data);
+      //  var_dump($filename, $data);exit;
 
         if ($result) {
             isset($first) && $this->setTagItem($filename);
@@ -248,7 +257,7 @@ class File extends Driver
         $this->writeTimes++;
 
         try {
-            return $this->unlink($this->getCacheKey($name));
+            return $this->unlink($this->getCacheKey($name)); // unlink 删除文件
         } catch (\Exception $e) {
         }
     }
@@ -275,6 +284,8 @@ class File extends Driver
 
         $files = (array) glob($this->options['path'] . ($this->options['prefix'] ? $this->options['prefix'] . DIRECTORY_SEPARATOR : '') . '*');
 
+     //   var_dump($files, $this->options, $this->options['path'] . ($this->options['prefix'] ? $this->options['prefix'] . DIRECTORY_SEPARATOR : '') . '*');exit;
+       // var_dump($files);exit;
         foreach ($files as $path) {
             if (is_dir($path)) {
                 $matches = glob($path . DIRECTORY_SEPARATOR . '*.php');

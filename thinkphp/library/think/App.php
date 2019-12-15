@@ -502,6 +502,9 @@ class App extends Container
        // var_dump($this->middleware->all());exit;
 
         $this->middleware->add(function (Request $request, $next) use ($dispatch, $data) {
+
+//            var_dump($dispatch);
+
             // var_dump('ppp');
            // var_dump($data);
             // 没错误，直接走的run 方法
@@ -781,7 +784,7 @@ class App extends Container
             }
         }
 
-        $this->__set($guid, $class);
+        $this->__set($guid, $class); // 这个thinkphp 每操作一次，就绑定一次，也挺好的，下次就不用再去生成了
 
         return $object;
     }

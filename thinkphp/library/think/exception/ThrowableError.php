@@ -11,6 +11,7 @@
 
 namespace think\exception;
 
+// 这个类似 捕捉的error ,
 class ThrowableError extends \ErrorException  // 感觉就是把error 转换成exception (throwable error)
 {
     public function __construct(\Throwable $e)

@@ -32,8 +32,8 @@ class Error
     public static function register()
     {
         error_reporting(E_ALL); // php 标准错误处理级别
-        set_error_handler([__CLASS__, 'appError']); // 对于warning 级别的处理
-        set_exception_handler([__CLASS__, 'appException']); // 用户自定义的try catch , 会在执行完之后停止，但是不会交给php 标准错误处理
+        set_error_handler([__CLASS__, 'appError']); // 对于warning 级别的处理， e_user 这些的错误级别的处理
+        set_exception_handler([__CLASS__, 'appException']); // 用户自定义的try catch , 会在执行完之后停止，但是不会交给php 标准错误处理 （不用在最外层套一个 try catch ）
         register_shutdown_function([__CLASS__, 'appShutdown']); // 感觉就是只要注册了，不管怎样都会执行
     }
 
@@ -58,6 +58,9 @@ class Error
         if (PHP_SAPI == 'cli') {
             self::getExceptionHandler()->renderForConsole(new ConsoleOutput, $e); // cli 模式下官方handle 的处理
         } else {
+
+            var_dump($e->getMessage(), $e->getFile(), $e->getLine());exit;
+
             self::getExceptionHandler()->render($e)->send();
             // 这就是web 模式下面我们需要写render 的原因， 这个地方是实际render 的执行
             // 这个send 方法是Response 的，所以render 处理后一定要产生response 对象
@@ -76,6 +79,7 @@ class Error
     public static function appError($errno, $errstr, $errfile = '', $errline = 0)
     {
         // var_dump('error');
+        // errno 出错级别
         $exception = new ErrorException($errno, $errstr, $errfile, $errline); // try catch 抓不到的直接转成 exception （也就是实际的fatal error）
         if (error_reporting() & $errno) { // error_reporting 获取错误级别
             // 将错误信息托管至 think\exception\ErrorException
@@ -83,6 +87,7 @@ class Error
             throw $exception; // 把try catch 无法捕获的错误抛出，用于捕获, 交给上面的 app_exception 处理
         }
 
+        // 就是说就算不报错误，我们还是得记录的
         self::getExceptionHandler()->report($exception); // 如果不处理就直接记录 （warning notice 那些确实不咋重要）
     }
 

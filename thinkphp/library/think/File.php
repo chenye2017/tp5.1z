@@ -491,6 +491,7 @@ class File extends SplFileObject
 
     public function __call($method, $args)
     {
+       var_dump($method, $args);
         return $this->hash($method);
     }
 }

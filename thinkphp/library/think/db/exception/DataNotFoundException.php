@@ -26,6 +26,8 @@ class DataNotFoundException extends DbException
      */
     public function __construct($message, $table = '', array $config = [])
     {
+        // 表的数据查找不到的exception
+        // 其实我之前一直想重写 getMessage 这些方法，其实这些方法是final， 不能重写，但他们获取的是message 属性，所以我们其实只要修改message 属性，就能达到重写这个方法的作用
         $this->message = $message;
         $this->table   = $table;
 
