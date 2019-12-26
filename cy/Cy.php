@@ -1,6 +1,38 @@
 <?php
 //throw new Exception('sss');
 
+var_dump(explode(',', ''));exit;
+
+$z = [2, 4];
+
+var_dump(array_search(45, $z));
+
+exit;
+
+if (strlen('hahha') > 2) {
+    $v['couponUrl'] = '11';
+}
+exit;
+
+$arr = [
+    1 => '1',
+    4 => '2'
+];
+
+for($i=0; $i < 5; $i++) {
+    if (!$arr[$i]) {
+        $arr[$i] = 'test';
+    }
+}
+var_dump($arr, array_values($arr));exit;
+
+$p = 19 / 10;
+
+var_dump(round($p));exit;
+
+$arr = ['cc', 'xixi'];
+var_dump(array_search('cc', $arr));exit;
+
 while(true) {
     var_dump(1);
     return true;

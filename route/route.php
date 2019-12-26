@@ -10,19 +10,21 @@
 // +----------------------------------------------------------------------
 
 use app\common\model\Cy;
+use \think\facade\Request;
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-try {
+/*try {
 
     $cyc = new \Cyconcrete();
 } catch (\Exception $e) {
     var_dump($e->getMessage());
-}
+}*/
 
 Route::get('/hupu1', 'app\index\controller\Index@hello');
 
+$cyc = 1;
 
 Route::get('/hupu/:xixi', function ($t1, $t2, \Cy $haha, $test = 'cy', $xixi) use ($cyc) {
     //  var_dump(13);
@@ -58,7 +60,7 @@ Route::get('/hupu/:xixi', function ($t1, $t2, \Cy $haha, $test = 'cy', $xixi) us
 
 // miss 方法也能支持匿名函数
 Route::miss(function () {
-    var_dump('ww');
+    var_dump('路由找不到啦');
 });
 
 Route::get('/ss', 'index/Test/index');
@@ -789,6 +791,31 @@ Route::any('/val', function () {
         echo "Success!";
     }
 });
+
+Route::get('/redis', function() {
+   $client = new \Predis\Client();
+   var_dump($client->exists('name12'));exit;
+});
+
+
+
+Route::any('/controller', 'app\index\v1\Duo@test1')->cache('3600');
+
+Route::get('/domain', function() {
+    var_dump(Request::url().PHP_EOL);
+// 获取完整URL地址 包含域名
+   var_dump(Request::url(true).PHP_EOL);
+// 获取当前URL（不含QUERY_STRING） 不带域名
+   var_dump(Request::baseFile().PHP_EOL);
+// 获取当前URL（不含QUERY_STRING） 包含域名
+    var_dump(Request::baseFile(true));
+// 获取URL访问根地址 不带域名
+    var_dump(Request::root().PHP_EOL);
+// 获取URL访问根地址 包含域名
+    var_dump(Request::root(true));
+});
+
+
 
 return [
 

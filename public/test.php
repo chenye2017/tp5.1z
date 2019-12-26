@@ -1,5 +1,23 @@
 <?php
 
+var_dump(round(5/2));
+exit;
+
+var_dump(http_build_query(['name' => 1,'sex' => 2]));exit;
+
+var_dump(unserialize('a:3:{s:8:"required";b:1;s:4:"path";s:7:"appZone";s:8:"max_size";s:7:"2000000";}'));exit;
+
+$id = 'cy';
+$name = 'cy1';
+var_dump(compact('id', 'name'));
+exit;
+
+var_dump(array_key_exists('x1', ['x'=>1]));
+
+exit;
+
+var_dump(filter_var_array([1,2.1], FILTER_VALIDATE_INT) );exit;
+
 echo 2;
 
 

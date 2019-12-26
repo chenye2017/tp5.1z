@@ -23,4 +23,6 @@ class Behavior
     {
         var_dump('wo yeshi yilai');
     }
+
+
 }

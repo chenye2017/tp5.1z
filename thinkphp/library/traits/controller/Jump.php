@@ -41,6 +41,7 @@ trait Jump
         if (is_null($url) && isset($_SERVER["HTTP_REFERER"])) {
             $url = $_SERVER["HTTP_REFERER"];
         } elseif ('' !== $url) {
+
             $url = (strpos($url, '://') || 0 === strpos($url, '/')) ? $url : Container::get('url')->build($url);
         }
 
@@ -53,12 +54,16 @@ trait Jump
         ];
 
         $type = $this->getResponseType();
+
+
+
         // 把跳转模板的渲染下沉，这样在 response_send 行为里通过getData()获得的数据是一致性的格式
         if ('html' == strtolower($type)) {
             $type = 'jump';
         }
 
         $response = Response::create($result, $type)->header($header)->options(['jump_template' => $this->app['config']->get('dispatch_success_tmpl')]);
+
 
         throw new HttpResponseException($response);
     }
