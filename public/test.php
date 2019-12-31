@@ -1,4 +1,17 @@
 <?php
+var_dump(str_replace(' ',  '_', date('Y-m-d H:i:s')));
+
+exit;
+
+$test = [1,2,3,4];
+
+var_dump(array_chunk($test, 2));
+exit;
+
+$arr = range(2,30, 1);
+
+var_dump(count($arr));exit;
+
 
 var_dump(round(5/2));
 exit;

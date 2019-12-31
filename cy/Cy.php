@@ -1,6 +1,20 @@
 <?php
 //throw new Exception('sss');
 
+
+for ($i = 1; $i < 4; $i++) {
+    var_dump($i);
+    if ($i == 2) {
+        if ($try < 3) {
+            $try++;
+            $i--;
+        }
+        continue;
+    }
+    $try = 1;
+}
+exit;
+
 var_dump(explode(',', ''));exit;
 
 $z = [2, 4];

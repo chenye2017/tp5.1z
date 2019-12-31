@@ -22,7 +22,9 @@ ini_set('display_errors', 1);
     var_dump($e->getMessage());
 }*/
 
-Route::get('/hupu1', 'app\index\controller\Index@hello');
+Route::get('/hupu1', function () {
+    $z = new \app\index\controller\Behavior();
+});
 
 $cyc = 1;
 
@@ -204,9 +206,9 @@ Route::get('/', function () {
 });
 
 
-Route::get('/yilai', function (\app\index\controller\Behavior $obj) {
+/*Route::get('/yilai', function (\app\index\controller\Behavior $obj) {
     $obj->test();
-});
+});*/
 
 // 千万不能这么写，太傻比了
 \think\facade\Route::get('/name/:id', function ($id, $name) {

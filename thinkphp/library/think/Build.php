@@ -209,6 +209,7 @@ class Build
                 $path = $this->basePath . $module . DIRECTORY_SEPARATOR . $layer . DIRECTORY_SEPARATOR;
                 $content .= $this->buildDirRoute($path, $namespace, $module, $suffix, $layer);
             }
+
         } else {
             $path = $this->basePath . $layer . DIRECTORY_SEPARATOR;
             $content .= $this->buildDirRoute($path, $namespace, '', $suffix, $layer);
@@ -232,13 +233,20 @@ class Build
      */
     protected function buildDirRoute($path, $namespace, $module, $suffix, $layer)
     {
+
         $content     = '';
         $controllers = glob($path . '*.php');
+
+
 
         foreach ($controllers as $controller) {
             $controller = basename($controller, '.php');
 
-            $class = new \ReflectionClass($namespace . '\\' . ($module ? $module . '\\' : '') . $layer . '\\' . $controller);
+            try {
+                $class = new \ReflectionClass($namespace . '\\' . ($module ? $module . '\\' : '') . $layer . '\\' . $controller);
+            } catch (\Exception $e) {
+                var_dump($e->getMessage());exit;
+            }
 
             if (strpos($layer, '\\')) {
                 // 多级控制器

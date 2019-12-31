@@ -133,12 +133,17 @@ class Loader
     public static function autoload($class)
     {
 
+
         //var_dump(11,self::$classAlias);exit;
         if (isset(self::$classAlias[$class])) {
             return class_alias(self::$classAlias[$class], $class);
         }
 
+
+
+
         if ($file = self::findFile($class)) {
+
 
             // Win环境严格区分大小写
             if (strpos(PHP_OS, 'WIN') !== false && pathinfo($file, PATHINFO_FILENAME) != pathinfo(realpath($file), PATHINFO_FILENAME)) {
@@ -158,15 +163,26 @@ class Loader
      */
     private static function findFile($class)
     {
+
+
         if (!empty(self::$classMap[$class])) {
             // 类库映射
             return self::$classMap[$class];
         }
 
+
+
         // 查找 PSR-4
         $logicalPathPsr4 = strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
 
+
+
         $first = $class[0];
+
+        if ($class == 'app\index\controller\Behavior') {
+            var_dump(self::$prefixLengthsPsr4,11);exit;
+        }
+
         if (isset(self::$prefixLengthsPsr4[$first])) {
             foreach (self::$prefixLengthsPsr4[$first] as $prefix => $length) {
                 if (0 === strpos($class, $prefix)) {
@@ -181,21 +197,31 @@ class Loader
 
       //  var_dump(self::$fallbackDirsPsr4);
         // 查找 PSR-4 fallback dirs
+
+
+
         foreach (self::$fallbackDirsPsr4 as $dir) {
             if (is_file($file = $dir . DIRECTORY_SEPARATOR . $logicalPathPsr4)) {
                 return $file;
             }
         }
 
+
+
         // 查找 PSR-0
         if (false !== $pos = strrpos($class, '\\')) {
             // namespaced class name
             $logicalPathPsr0 = substr($logicalPathPsr4, 0, $pos + 1)
                 . strtr(substr($logicalPathPsr4, $pos + 1), '_', DIRECTORY_SEPARATOR);
+
+
+
         } else {
             // PEAR-like class name
             $logicalPathPsr0 = strtr($class, '_', DIRECTORY_SEPARATOR) . '.php';
         }
+
+
 
         if (isset(self::$prefixesPsr0[$first])) {
             foreach (self::$prefixesPsr0[$first] as $prefix => $dirs) {

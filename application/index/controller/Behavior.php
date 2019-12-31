@@ -15,6 +15,7 @@ class Behavior
 
     public function run($params)
     {
+        var_dump('hahah');exit;
         return false;
         var_dump($params, 11);
     }
